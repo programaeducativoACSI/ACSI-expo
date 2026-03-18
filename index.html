@@ -132,13 +132,12 @@ let currentLang = 'es-MX';
 const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX'];
 let langIdx = 0;
 
-// 2. INICIO DE EXPERIENCIA
+// 2. INICIO DE EXPERIENCIA (Al presionar Comenzar)
 function initExperience() {
     document.getElementById('welcome-screen').style.display = 'none';
-    // El audio y carrusel ya estarán listos porque cargamos al inicio
 }
 
-// 3. CARGA DINÁMICA DE DISEÑO Y DATOS
+// 3. CARGA DINÁMICA DESDE GOOGLE SHEETS
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     
@@ -147,42 +146,61 @@ async function loadDataFromSheets() {
         const data = await response.text();
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
 
-        // --- FILA 1 (A1): TÍTULO DINÁMICO ---
+        // --- FILA 1 (A1): TÍTULO DE BIENVENIDA ---
         if (rows[0]) {
             const titleA1 = rows[0].split(',')[0].replace(/"/g, "");
-            document.querySelector('.retro-title').innerHTML = titleA1.replace(/\\n/g, '<br>');
+            const titleElement = document.querySelector('.retro-title');
+            if(titleElement) titleElement.innerHTML = titleA1.replace(/\\n/g, '<br>');
         }
 
-        // --- FILA 2 (A2, B2, C2): DISEÑO DINÁMICO ---
+        // --- FILA 2 (A2, B2, C2): CONTROL DE DISEÑO ---
         if (rows[1]) {
-            const configCols = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            const bgColor = configCols[0].replace(/"/g, "").trim();      // A2
-            const fontTitle = configCols[1] ? configCols[1].replace(/"/g, "").trim() : "'Press Start 2P', cursive"; // B2
-            const titleColor = configCols[2] ? configCols[2].replace(/"/g, "").trim() : "#D04F2C"; // C2
+            const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            const bgColor = config[0].replace(/"/g, "").trim();      // A2
+            const fontName = config[1] ? config[1].replace(/"/g, "").trim() : "inherit"; // B2
+            const txtColor = config[2] ? config[2].replace(/"/g, "").trim() : "inherit"; // C2
 
-            // Aplicar Estilos
+            // Aplicar estilos al body y pantalla de inicio
             document.body.style.backgroundColor = bgColor;
-            document.getElementById('welcome-screen').style.backgroundColor = bgColor;
+            document.body.style.color = txtColor;
+            const welcome = document.getElementById('welcome-screen');
+            if(welcome) welcome.style.backgroundColor = bgColor;
             
             const titleElement = document.querySelector('.retro-title');
-            titleElement.style.fontFamily = fontTitle;
-            titleElement.style.color = titleColor;
+            if(titleElement) {
+                titleElement.style.fontFamily = fontName;
+                titleElement.style.color = txtColor;
+            }
         }
 
-        // --- FILA 3 EN ADELANTE: CONTENIDO ---
+        // --- FILA 4 EN ADELANTE: CONTENIDO (Saltamos fila 3 de encabezados) ---
         content = {}; 
-        rows.slice(2).forEach(row => {
+        let lastCategory = ""; 
+
+        rows.slice(3).forEach(row => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if (cols.length >= 3) {
+            if (cols.length >= 2) {
                 const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
-                const cat = clean(cols[0]).toLowerCase();
-                if (!content[cat]) content[cat] = [];
                 
-                content[cat].push({
-                    t: clean(cols[1]),
-                    info: clean(cols[2]), en: clean(cols[3]), zh: clean(cols[4]),
-                    fr: clean(cols[5]), de: clean(cols[6]), nah: clean(cols[7])
-                });
+                let cat = clean(cols[0]).toLowerCase();
+                if (cat === "" && lastCategory !== "") {
+                    cat = lastCategory;
+                } else if (cat !== "") {
+                    lastCategory = cat;
+                }
+
+                if (cat !== "") {
+                    if (!content[cat]) content[cat] = [];
+                    content[cat].push({
+                        t: clean(cols[1]),    // B: Nombre Casete
+                        es: clean(cols[2]),   // C: Español
+                        en: clean(cols[3]),   // D: Inglés
+                        zh: clean(cols[4]),   // E: Mandarín
+                        fr: clean(cols[5]),   // F: Francés
+                        de: clean(cols[6]),   // G: Alemán
+                        nah: clean(cols[7])   // H: Náhuatl
+                    });
+                }
             }
         });
 
@@ -192,30 +210,31 @@ async function loadDataFromSheets() {
             currentIndex = 0;
             buildCarousel();
         }
-        
-    } catch (e) {
-        console.error("Error cargando configuración desde Excel:", e);
-    }
+    } catch (e) { console.error("Error cargando Excel:", e); }
 }
 
 // 4. MOTOR VISUAL
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
+    if(!container) return;
     container.innerHTML = '';
-    const items = content[modes[currentModeIdx]];
+    
+    const currentMode = modes[currentModeIdx];
+    const items = content[currentMode];
     const total = items.length;
     const theta = 360 / total;
-    const radius = Math.max(200, Math.round((70 / Math.tan(Math.PI / total))) + 100);
+    const radius = Math.max(220, Math.round((75 / Math.tan(Math.PI / total))) + 100);
 
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
-        card.innerHTML = `<div style="font-size:8px; text-align:center; padding:5px; color:white;">${item.t}</div>`;
+        card.innerHTML = `<div style="font-size:8px; text-align:center; padding:5px;">${item.t}</div>`;
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
         card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
         container.appendChild(card);
     });
-    document.getElementById('mode-label').innerText = modes[currentModeIdx].toUpperCase();
+    
+    document.getElementById('mode-label').innerText = currentMode.toUpperCase();
     updateSelection();
 }
 
@@ -234,15 +253,16 @@ function updateSelection() {
 function playCurrent() {
     window.speechSynthesis.cancel();
     const m = content[modes[currentModeIdx]][currentIndex];
-    const langMap = { 'es-MX': 'info', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
-    const text = m[langMap[currentLang]] || m.info;
+    const langMap = { 'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
+    const text = m[langMap[currentLang]] || m.es;
     
     const msg = new SpeechSynthesisUtterance(text);
     msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang;
+    if(currentLang === 'nah-MX') { msg.rate = 0.7; msg.pitch = 0.9; }
     window.speechSynthesis.speak(msg);
 }
 
-// 6. PERILLAS Y BOTONES
+// 6. CONTROLES DE LAS PERILLAS
 function nextMode() {
     window.speechSynthesis.cancel();
     currentModeIdx = (currentModeIdx + 1) % modes.length;
@@ -266,7 +286,7 @@ function rotateCarousel(dir) {
     updateSelection();
 }
 
-// Cargar todo al inicio
+// Cargar al inicio para configurar diseño
 document.addEventListener('DOMContentLoaded', loadDataFromSheets);
 </script>
 </body>
