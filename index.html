@@ -158,59 +158,45 @@
 <div id="tour-overlay"><div id="tour-tooltip"><span id="tour-text"></span><button onclick="nextTourStep()" style="display:block; margin-top:15px; width:100%;">OK</button></div></div>
 
 <script>
-// ==========================================
-// 1. VARIABLES GLOBALES Y CONFIGURACIÓN
-// ==========================================
+// 1. VARIABLES GLOBALES
 let content = {}; 
 let modes = [];
 let currentModeIdx = 0;
 let currentIndex = 0;
-let currentLang = 'es-MX'; // Idioma por defecto
+let currentLang = 'es-MX';
 
-// ==========================================
-// 2. FILTRO FONÉTICO (NÁHUATL)
-// ==========================================
-function preparePhoneticText(text, lang) {
-    if (lang !== 'nah-MX' || !text) return text;
-    // Limpieza profunda para evitar que la IA de Google deletree
-    return text.toLowerCase()
-        .replace(/tlah/g, 'tla-')
-        .replace(/tl/g, 't-la')
-        .replace(/lli/g, 'li')
-        .replace(/ll/g, 'l')
-        .replace(/hu/g, 'u')
-        .replace(/qu/g, 'ko')
-        .replace(/c/g, 'k')
-        .trim();
+// 2. FUNCIÓN PARA EL BOTÓN DE INICIO (ESTA ES LA QUE FALTABA)
+function initExperience() {
+    // Ocultamos la pantalla de bienvenida
+    const welcome = document.getElementById('welcome-screen');
+    if (welcome) welcome.style.display = 'none';
+    
+    // Iniciamos la carga de datos
+    loadDataFromSheets();
 }
 
-// ==========================================
-// 3. CARGA DINÁMICA (GOOGLE SHEETS)
-// ==========================================
+// 3. CARGA DINÁMICA DESDE TU GOOGLE SHEETS
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     
     try {
         const response = await fetch(url);
-        const csvText = await response.text();
-        // Separar filas y quitar la de encabezados
-        const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
+        const data = await response.text();
+        // Separamos filas y quitamos encabezados
+        const rows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
 
-        content = {}; // Reiniciar base de datos
-
+        content = {}; 
         rows.forEach(row => {
-            // Regex para manejar comas dentro de celdas de Excel
             const columns = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (columns && columns.length >= 2) {
                 const clean = (val) => val ? val.replace(/^"|"$/g, "").trim() : "";
-                
-                // Columna B es la categoría (Pintores, Murales, etc.)
                 const catRaw = clean(columns[1]).toLowerCase();
+
                 if (!content[catRaw]) content[catRaw] = [];
 
                 content[catRaw].push({
-                    t: clean(columns[0]),   // Columna A: Título
-                    info: clean(columns[2]), // Columna C: Español
+                    t: clean(columns[0]),
+                    info: clean(columns[2]),
                     en: clean(columns[3]) || "",
                     zh: clean(columns[4]) || "",
                     fr: clean(columns[5]) || "",
@@ -220,25 +206,21 @@ async function loadDataFromSheets() {
             }
         });
 
-        // Extraer categorías encontradas
         modes = Object.keys(content);
         if (modes.length > 0) {
             currentModeIdx = 0;
             currentIndex = 0;
-            console.log("Sistema Listo. Categorías:", modes);
-            buildCarousel(); 
+            buildCarousel();
         } else {
-            document.getElementById('infoPanel').innerText = "Error: No se hallaron datos en el Excel.";
+            document.getElementById('infoPanel').innerText = "Error: No hay categorías en el Excel.";
         }
     } catch (error) {
-        console.error("Error de conexión:", error);
-        document.getElementById('infoPanel').innerText = "Error de conexión con Google Sheets.";
+        console.error("Error:", error);
+        document.getElementById('infoPanel').innerText = "Error de conexión con los datos.";
     }
 }
 
-// ==========================================
-// 4. MOTOR VISUAL (CARRUSEL 3D)
-// ==========================================
+// 4. MOTOR DEL CARRUSEL
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
     if (!container) return;
@@ -250,78 +232,45 @@ function buildCarousel() {
 
     const total = items.length;
     const theta = 360 / total;
-    // Radio dinámico para que no se encimen (mínimo 150px)
-    const radius = Math.max(150, Math.round((50 / Math.tan(Math.PI / total))) + 100);
+    const radius = Math.max(180, Math.round((50 / Math.tan(Math.PI / total))) + 120);
 
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
-        card.innerHTML = `<div class="cassette-label">${item.t}</div>`;
-        
-        const angle = i * theta;
-        card.style.transform = `rotateY(${angle}deg) translateZ(${radius}px)`;
+        card.innerHTML = `<div class="cassette-label" style="font-size:10px; padding:10px;">${item.t}</div>`;
+        card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
         
         card.onclick = () => {
             currentIndex = i;
             updateSelection();
-            playCurrent();
         };
         container.appendChild(card);
     });
-    
     updateSelection();
 }
 
 function updateSelection() {
     const cards = document.querySelectorAll('.cassette-card');
-    if (cards.length === 0) return;
-
     const theta = 360 / cards.length;
     const container = document.getElementById('carouselContainer');
     container.style.transform = `rotateY(${-currentIndex * theta}deg)`;
     
-    cards.forEach((card, i) => {
-        card.classList.toggle('active', i === currentIndex);
-    });
+    cards.forEach((card, i) => card.classList.toggle('active', i === currentIndex));
 
     const m = content[modes[currentModeIdx]][currentIndex];
     document.getElementById('infoPanel').innerText = m.info;
     document.getElementById('currentTitle').innerText = m.t;
 }
 
-// ==========================================
-// 5. SISTEMA DE AUDIO (MULTILINGÜE)
-// ==========================================
-function playCurrent() {
-    stopAudioForce();
-    const m = content[modes[currentModeIdx]][currentIndex];
-    const langMap = { 'es-MX': 'info', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
-    
-    let text = m[langMap[currentLang]] || m.info;
-    let processedText = preparePhoneticText(text, currentLang);
-
-    const msg = new SpeechSynthesisUtterance(processedText);
-    msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang;
-
-    if (currentLang === 'nah-MX') {
-        msg.rate = 0.6;
-        msg.pitch = 0.8;
-    }
-
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.lang.includes(msg.lang.split('-')[0]) && v.name.includes('Google'));
-    if(preferred) msg.voice = preferred;
-
-    window.speechSynthesis.speak(msg);
-}
-
-function stopAudioForce() {
-    window.speechSynthesis.cancel();
-}
-
-// ==========================================
-// 6. DINÁMICAS (JUEGOS)
-// ==========================================
+// 5. FIRMA DE AUTOR (EL GATO BINARIO)
+/*
+             01          10
+            0111        1110
+           0111110000111111
+          011111111111111111
+          111111111111111111
+    [ OSAKA VISION PRO - BY SAÚL - 2026 ]
+*/
 function startTrivia() {
     const items = content[modes[currentModeIdx]];
     if (!items || items.length < 2) return;
