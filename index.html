@@ -123,91 +123,132 @@
 </div>
 
 <script>
+// 1. VARIABLES GLOBALES
 let content = {}; 
 let modes = [];
 let currentModeIdx = 0;
 let currentIndex = 0;
 let currentLang = 'es-MX';
+const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX'];
+let langIdx = 0;
 
+// 2. INICIO DE EXPERIENCIA
 function initExperience() {
     document.getElementById('welcome-screen').style.display = 'none';
     loadDataFromSheets();
 }
 
+// 3. CARGA DINÁMICA
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     try {
         const response = await fetch(url);
-        const csvText = await response.text();
-        const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
+        const data = await response.text();
+        const rows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
+
         content = {}; 
         rows.forEach(row => {
-            const columns = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if (columns && columns.length >= 2) {
-                const clean = (val) => val ? val.replace(/^"|"$/g, "").trim() : "";
-                const catRaw = clean(columns[1]).toLowerCase();
-                if (!content[catRaw]) content[catRaw] = [];
-                content[catRaw].push({
-                    t: clean(columns[0]), info: clean(columns[2]),
-                    en: clean(columns[3]), zh: clean(columns[4]),
-                    fr: clean(columns[5]), de: clean(columns[6]), nah: clean(columns[7])
+            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            if (cols.length >= 2) {
+                const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+                const cat = clean(cols[1]).toLowerCase();
+                if (!content[cat]) content[cat] = [];
+                content[cat].push({
+                    t: clean(cols[0]), info: clean(cols[2]),
+                    en: clean(cols[3]), zh: clean(cols[4]),
+                    fr: clean(cols[5]), de: clean(cols[6]), nah: clean(cols[7])
                 });
             }
         });
+
         modes = Object.keys(content);
-        if (modes.length > 0) buildCarousel();
-    } catch (e) { console.error(e); }
+        if (modes.length > 0) {
+            currentModeIdx = 0;
+            currentIndex = 0;
+            buildCarousel();
+        }
+    } catch (e) { console.error("Error en Sheets:", e); }
 }
 
+// 4. MOTOR DEL CARRUSEL
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
     container.innerHTML = '';
     const items = content[modes[currentModeIdx]];
     const total = items.length;
     const theta = 360 / total;
-    const radius = Math.max(180, Math.round((60 / Math.tan(Math.PI / total))) + 100);
+    // Radio dinámico para visibilidad
+    const radius = Math.max(160, Math.round((70 / Math.tan(Math.PI / total))) + 80);
 
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
-        card.innerHTML = `<div style="font-size:8px; text-align:center;">${item.t}</div>`;
+        card.innerHTML = `<div style="font-size:8px; text-align:center; padding:5px; color:white;">${item.t}</div>`;
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
-        card.onclick = () => { currentIndex = i; updateSelection(); };
+        card.onclick = () => { 
+            stopAudioForce();
+            currentIndex = i; 
+            updateSelection(); 
+        };
         container.appendChild(card);
     });
+    
     document.getElementById('mode-label').innerText = modes[currentModeIdx].toUpperCase();
     updateSelection();
 }
 
+// 5. CONTROLES DE NAVEGACIÓN
 function rotateCarousel(dir) {
+    stopAudioForce();
     const items = content[modes[currentModeIdx]];
     currentIndex = (currentIndex + dir + items.length) % items.length;
     updateSelection();
 }
 
 function nextMode() {
+    stopAudioForce();
     currentModeIdx = (currentModeIdx + 1) % modes.length;
     currentIndex = 0;
+    // Animación de la perilla
     document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
     buildCarousel();
 }
 
+function toggleLanguage() {
+    stopAudioForce();
+    langIdx = (langIdx + 1) % langOptions.length;
+    currentLang = langOptions[langIdx];
+    // Animación perilla lenguaje
+    document.getElementById('lang-knob').style.transform = `rotate(${langIdx * 60}deg)`;
+    updateSelection(); // Actualiza texto en panel
+}
+
 function updateSelection() {
     const cards = document.querySelectorAll('.cassette-card');
+    if (cards.length === 0) return;
     const theta = 360 / cards.length;
     document.getElementById('carouselContainer').style.transform = `rotateY(${-currentIndex * theta}deg)`;
+    
     cards.forEach((card, i) => card.classList.toggle('active', i === currentIndex));
     
     const m = content[modes[currentModeIdx]][currentIndex];
-    document.getElementById('infoPanel').innerText = m.info;
-    document.getElementById('currentTitle').innerText = m.t;
+    const langMap = { 'es-MX': 'info', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
+    
+    document.getElementById('infoPanel').innerText = m[langMap[currentLang]] || m.info;
+    document.getElementById('currentTitle').innerText = `${m.t} [${currentLang.split('-')[0].toUpperCase()}]`;
 }
 
+// 6. AUDIO Y DINÁMICAS
 function playCurrent() {
     stopAudioForce();
     const m = content[modes[currentModeIdx]][currentIndex];
-    const msg = new SpeechSynthesisUtterance(m.info);
-    msg.lang = currentLang;
+    const langMap = { 'es-MX': 'info', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
+    let rawText = m[langMap[currentLang]] || m.info;
+
+    const msg = new SpeechSynthesisUtterance(rawText);
+    msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang; 
+    
+    if (currentLang === 'nah-MX') { msg.rate = 0.6; msg.pitch = 0.8; }
     window.speechSynthesis.speak(msg);
 }
 
@@ -216,11 +257,10 @@ function stopAudioForce() { window.speechSynthesis.cancel(); }
 function startTrivia() {
     const items = content[modes[currentModeIdx]];
     if (!items || items.length < 2) return;
-    const correctIdx = Math.floor(Math.random() * items.length);
-    const item = items[correctIdx];
+    const correct = items[Math.floor(Math.random() * items.length)];
     const panel = document.getElementById('infoPanel');
-    panel.innerHTML = `<div style="color:#0f0;">¿Quién es?: "${item.info.substring(0,50)}..."</div>
-    <button onclick="buildCarousel()" style="color:#fff; background:#000; border:1px solid #0f0; margin-top:5px; cursor:pointer;">CERRAR</button>`;
+    panel.innerHTML = `<div style="color:#0f0;">ADIVINA: "${correct.info.substring(0,60)}..."</div>
+    <button onclick="buildCarousel()" style="color:#fff; background:#000; border:1px solid #0f0; margin-top:5px; cursor:pointer; font-family:inherit; font-size:10px;">CERRAR</button>`;
 }
 </script>
 </body>
