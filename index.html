@@ -132,12 +132,12 @@ let currentLang = 'es-MX';
 const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX'];
 let langIdx = 0;
 
-// 2. INICIO DE EXPERIENCIA (Al presionar Comenzar)
+// 2. INICIO
 function initExperience() {
     document.getElementById('welcome-screen').style.display = 'none';
 }
 
-// 3. CARGA DINÁMICA DESDE GOOGLE SHEETS
+// 3. CARGA DINÁMICA DE DISEÑO Y DATOS
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     
@@ -153,64 +153,70 @@ async function loadDataFromSheets() {
             if(titleElement) titleElement.innerHTML = titleA1.replace(/\\n/g, '<br>');
         }
 
-        // --- FILA 2 (A2, B2, C2): CONTROL DE DISEÑO ---
+        // --- FILA 2: MAPEO DE DISEÑO TOTAL (A2 a H2) ---
         if (rows[1]) {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            const bgColor = config[0].replace(/"/g, "").trim();      // A2
-            const fontName = config[1] ? config[1].replace(/"/g, "").trim() : "inherit"; // B2
-            const txtColor = config[2] ? config[2].replace(/"/g, "").trim() : "inherit"; // C2
+            const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-            // Aplicar estilos al body y pantalla de inicio
-            document.body.style.backgroundColor = bgColor;
-            document.body.style.color = txtColor;
-            const welcome = document.getElementById('welcome-screen');
-            if(welcome) welcome.style.backgroundColor = bgColor;
+            const txtTitulo    = clean(config[0]); // A2: Texto extra o subtítulo
+            const fontMain     = clean(config[1]) || "'Press Start 2P'"; // B2: Tipografía
+            const colorTitulo  = clean(config[2]); // C2: Color título
+            const colorFondo   = clean(config[3]); // D2: Color fondo
+            const colorTxtCas  = clean(config[4]); // E2: Color fuente casete
+            const colorCasete  = clean(config[5]); // F2: Color cuerpo casete
+            const colorBtnDin  = clean(config[6]); // G2: Color botón dinámicas
+            const colorBgDin   = clean(config[7]); // H2: Color fondo dinámicas (proyectado)
+
+            // Aplicar colores y fuentes
+            document.body.style.backgroundColor = colorFondo;
+            document.body.style.fontFamily = fontMain;
             
             const titleElement = document.querySelector('.retro-title');
             if(titleElement) {
-                titleElement.style.fontFamily = fontName;
-                titleElement.style.color = txtColor;
+                titleElement.style.color = colorTitulo;
+                titleElement.style.fontFamily = fontMain;
             }
+
+            const welcome = document.getElementById('welcome-screen');
+            if(welcome) welcome.style.backgroundColor = colorFondo;
+
+            const btnDin = document.querySelector('.btn-top-left');
+            if(btnDin) {
+                btnDin.style.backgroundColor = colorBtnDin;
+                btnDin.style.fontFamily = fontMain;
+            }
+
+            // Guardamos variables para el carrusel
+            window.caseteStyle = { bg: colorCasete, txt: colorTxtCas };
         }
 
-        // --- FILA 4 EN ADELANTE: CONTENIDO (Saltamos fila 3 de encabezados) ---
+        // --- FILA 4 EN ADELANTE: CONTENIDO ---
         content = {}; 
         let lastCategory = ""; 
-
         rows.slice(3).forEach(row => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length >= 2) {
-                const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+                const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+                let cat = cleanV(cols[0]).toLowerCase();
                 
-                let cat = clean(cols[0]).toLowerCase();
-                if (cat === "" && lastCategory !== "") {
-                    cat = lastCategory;
-                } else if (cat !== "") {
-                    lastCategory = cat;
-                }
+                if (cat === "" && lastCategory !== "") cat = lastCategory;
+                else if (cat !== "") lastCategory = cat;
 
                 if (cat !== "") {
                     if (!content[cat]) content[cat] = [];
                     content[cat].push({
-                        t: clean(cols[1]),    // B: Nombre Casete
-                        es: clean(cols[2]),   // C: Español
-                        en: clean(cols[3]),   // D: Inglés
-                        zh: clean(cols[4]),   // E: Mandarín
-                        fr: clean(cols[5]),   // F: Francés
-                        de: clean(cols[6]),   // G: Alemán
-                        nah: clean(cols[7])   // H: Náhuatl
+                        t: cleanV(cols[1]), 
+                        es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
+                        fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7])
                     });
                 }
             }
         });
 
         modes = Object.keys(content);
-        if (modes.length > 0) {
-            currentModeIdx = 0;
-            currentIndex = 0;
-            buildCarousel();
-        }
-    } catch (e) { console.error("Error cargando Excel:", e); }
+        if (modes.length > 0) buildCarousel();
+        
+    } catch (e) { console.error("Error en configuración:", e); }
 }
 
 // 4. MOTOR VISUAL
@@ -228,7 +234,11 @@ function buildCarousel() {
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
-        card.innerHTML = `<div style="font-size:8px; text-align:center; padding:5px;">${item.t}</div>`;
+        // Aplicamos colores dinámicos de la celda F2 y E2
+        card.style.backgroundColor = window.caseteStyle.bg || 'var(--color-naranja)';
+        card.style.color = window.caseteStyle.txt || 'white';
+        
+        card.innerHTML = `<div style="font-size:7px; text-align:center; padding:5px;">${item.t}</div>`;
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
         card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
         container.appendChild(card);
@@ -238,7 +248,6 @@ function buildCarousel() {
     updateSelection();
 }
 
-// 5. NAVEGACIÓN Y AUDIO
 function updateSelection() {
     const cards = document.querySelectorAll('.cassette-card');
     if (cards.length === 0) return;
@@ -250,19 +259,18 @@ function updateSelection() {
     document.getElementById('currentTitle').innerText = m.t;
 }
 
+// 5. AUDIO
 function playCurrent() {
     window.speechSynthesis.cancel();
     const m = content[modes[currentModeIdx]][currentIndex];
     const langMap = { 'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
     const text = m[langMap[currentLang]] || m.es;
-    
     const msg = new SpeechSynthesisUtterance(text);
     msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang;
-    if(currentLang === 'nah-MX') { msg.rate = 0.7; msg.pitch = 0.9; }
     window.speechSynthesis.speak(msg);
 }
 
-// 6. CONTROLES DE LAS PERILLAS
+// 6. PERILLAS
 function nextMode() {
     window.speechSynthesis.cancel();
     currentModeIdx = (currentModeIdx + 1) % modes.length;
@@ -286,7 +294,6 @@ function rotateCarousel(dir) {
     updateSelection();
 }
 
-// Cargar al inicio para configurar diseño
 document.addEventListener('DOMContentLoaded', loadDataFromSheets);
 </script>
 </body>
