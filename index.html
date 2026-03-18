@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Osaka Vision Pro: Final</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-verde: #80B0A4; --color-rojo: #D04F2C;
+            --color-amarillo: #D9AC36; --color-naranja: #D6742B;
+            --color-cafe: #431E15; --color-crema: #fffaf0;
+            --color-azul: #4A90E2; --color-oro: #FFD700;
+            --color-madera: #8d6e63;
+        }
+
+        body {
+            background-color: var(--color-crema);
+            font-family: 'Press Start 2P', cursive;
+            margin: 0; overflow: hidden; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; width: 100vw;
+        }
+
+      
+        #welcome-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--color-crema);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9000; text-align: center; padding: 20px;
+        }
+
+        .retro-title {
+            font-size: 1.2rem; color: var(--color-rojo);
+            text-shadow: 4px 4px 0px var(--color-cafe), 8px 8px 0px var(--color-naranja);
+            margin-bottom: 20px; line-height: 1.4;
+        }
+
+        .headphone-warning {
+            font-size: 0.35rem; color: var(--color-cafe);
+            margin-top: 20px; line-height: 1.6;
+            background: rgba(255, 255, 255, 0.5); padding: 10px; border-radius: 10px;
+        }
+
+        .tv-furniture {
+            position: relative;
+            width: 95vw; max-width: 460px;
+            background-color: var(--color-madera);
+            border: 10px solid #5d4037; border-radius: 40px;
+            padding: 30px 10px; box-shadow: 0 20px 0 #3d2b1f, 0 30px 50px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .tv-screen {
+            width: 85%; height: 210px; background: #1a1a1a;
+            border: 8px solid #b8860b; border-radius: 20px;
+            overflow: hidden; perspective: 1000px;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+
+        .carousel { width: 180px; height: 120px; position: relative; transform-style: preserve-3d; transition: transform 0.8s; }
+        .cassette-unit { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border: 2px solid var(--color-cafe); }
+
+        /* --- CONTROLES --- */
+        .controls-panel { width: 100%; display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: center; gap: 10px; color: white; margin-top: 15px; }
+        .knob-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .knob { width: 45px; height: 45px; background: #222; border: 4px solid var(--color-oro); border-radius: 50%; cursor: pointer; transition: transform 0.5s; position: relative; }
+        .knob::after { content: ''; position: absolute; top: 5px; left: 50%; width: 4px; height: 12px; background: var(--color-oro); transform: translateX(-50%); }
+        
+        .nav-buttons-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-bottom: 10px; }
+        .btn-yellow { background: var(--color-amarillo); color: var(--color-cafe); border: none; padding: 10px; font-family: 'Press Start 2P'; font-size: 0.4rem; cursor: pointer; box-shadow: 3px 3px 0px #000; }
+        
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn-nav { background: var(--color-amarillo); border: none; padding: 10px; font-family: 'Press Start 2P'; font-size: 0.45rem; cursor: pointer; box-shadow: 3px 3px 0px #000; }
+        
+        .progress-container { width: 90%; height: 8px; background: #000; margin: 10px auto; border: 1px solid var(--color-oro); grid-column: 1 / -1; }
+        .progress-bar { width: 0%; height: 100%; background: var(--color-rojo); }
+
+        .btn-top-left { position: absolute; top: 15px; left: 15px; z-index: 1000; background: var(--color-rojo); color: white; border: 2px solid var(--color-cafe); padding: 8px; font-size: 0.35rem; cursor: pointer; }
+
+        #games-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--color-cafe); z-index: 6000;
+            display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+        }
+        .game-card { background: var(--color-crema); border: 6px solid var(--color-oro); padding: 20px; width: 90%; max-width: 400px; color: var(--color-cafe); text-align: center; }
+        .cell { width: 25px; height: 25px; background: var(--color-crema); border: 1px solid var(--color-cafe); display: inline-flex; align-items: center; justify-content: center; font-size: 0.5rem; }
+
+       
+        #tour-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:8000; }
+        #tour-tooltip { position:fixed; background:var(--color-crema); color:var(--color-cafe); padding:15px; border:4px solid var(--color-oro); font-size:0.45rem; width:220px; z-index:8500; }
+    </style>
+</head>
+<body>
+
+<div id="welcome-screen">
+    <h1 class="retro-title">OSAKA 1969<br>VISION PRO</h1>
+    <div class="headphone-warning">
+        <p>🎧 Usa auriculares / Use headphones</p>
+        <p>🎧 请使用耳机 (Wèile huòdé...)</p>
+    </div>
+    <button class="btn-nav" style="background:var(--color-verde); margin-top:30px; padding:20px;" onclick="initExperience()">COMENZAR</button>
+</div>
+
+<button class="btn-top-left" onclick="toggleGames()">DINÁMICAS</button>
+
+<div class="tv-furniture">
+    <div class="tv-screen"><div class="carousel" id="carousel"></div></div>
+    <div class="controls-panel">
+        <div class="knob-container">
+            <div id="mode-knob" class="knob" onclick="nextMode()"></div>
+            <span style="font-size:0.3rem; color:var(--color-oro);">MODO</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <div id="mode-label" style="font-size:0.35rem; color:var(--color-amarillo);">MURALES</div>
+            <div id="active-label" style="font-size:0.4rem; color:white; margin:10px 0;">...</div>
+            <div class="nav-buttons-container">
+                <button class="btn-yellow" onclick="rotateCarousel(-1)">RETURN</button>
+                <button class="btn-yellow" onclick="rotateCarousel(1)">NEXT</button>
+            </div>
+            <div class="btn-group">
+                <button class="btn-nav" onclick="playCurrent()">PLAY</button>
+                <button class="btn-nav" style="background:var(--color-azul);" onclick="pauseAudio()">PAUSE</button>
+            </div>
+        </div>
+        <div class="knob-container">
+            <div id="lang-knob" class="knob" onclick="toggleLanguage()"></div>
+            <span style="font-size:0.3rem; color:var(--color-oro);">LANG</span>
+        </div>
+        <div class="progress-container"><div id="main-bar" class="progress-bar"></div></div>
+    </div>
+</div>
+
+<div id="games-overlay">
+    <h2 style="color:var(--color-amarillo); font-size:0.8rem;">JUEGOS</h2>
+    <div id="game-selector">
+        <button class="btn-nav" style="margin:10px;" onclick="showGuessGame()">ADIVINA</button>
+        <button class="btn-nav" style="margin:10px;" onclick="showCrossword()">CRUCIGRAMA</button>
+    </div>
+    <div id="game-content-area" style="display:none; width:100%; justify-content:center;">
+        <div id="guess-game-container" class="game-card" style="display:none;">
+            <div id="clues-list" style="text-align:left; margin-bottom:15px; font-size:0.4rem;"></div>
+            <button class="btn-yellow" onclick="nextClue()">+ PISTA</button>
+            <input type="text" id="guess-input" style="width:100%; margin-top:10px;">
+            <button class="btn-nav" style="background:var(--color-verde); margin-top:10px;" onclick="checkGuess()">OK</button>
+        </div>
+        <div id="crossword-game-container" class="game-card" style="display:none;">
+            <p id="cw-clue" style="font-size:0.4rem;"></p>
+            <div id="crossword-container" style="margin-bottom:15px;"></div>
+            <input type="text" id="cw-input" style="width:100%;">
+            <button class="btn-nav" style="background:var(--color-verde); margin-top:10px;" onclick="checkCW()">OK</button>
+        </div>
+    </div>
+    <button class="btn-nav" style="background:var(--color-rojo); margin-top:30px;" onclick="toggleGames()">VOLVER</button>
+</div>
+
+<div id="tour-overlay"><div id="tour-tooltip"><span id="tour-text"></span><button onclick="nextTourStep()" style="display:block; margin-top:15px; width:100%;">OK</button></div></div>
+
+<script>
+// ==========================================
+// 1. VARIABLES GLOBALES Y CONFIGURACIÓN
+// ==========================================
+let content = {}; 
+let modes = [];
+let currentModeIdx = 0;
+let currentIndex = 0;
+let currentLang = 'es-MX'; // Idioma por defecto
+
+// ==========================================
+// 2. FILTRO FONÉTICO (NÁHUATL)
+// ==========================================
+function preparePhoneticText(text, lang) {
+    if (lang !== 'nah-MX' || !text) return text;
+    // Limpieza profunda para evitar que la IA de Google deletree
+    return text.toLowerCase()
+        .replace(/tlah/g, 'tla-')
+        .replace(/tl/g, 't-la')
+        .replace(/lli/g, 'li')
+        .replace(/ll/g, 'l')
+        .replace(/hu/g, 'u')
+        .replace(/qu/g, 'ko')
+        .replace(/c/g, 'k')
+        .trim();
+}
+
+// ==========================================
+// 3. CARGA DINÁMICA (GOOGLE SHEETS)
+// ==========================================
+async function loadDataFromSheets() {
+    const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
+    
+    try {
+        const response = await fetch(url);
+        const csvText = await response.text();
+        // Separar filas y quitar la de encabezados
+        const rows = csvText.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
+
+        content = {}; // Reiniciar base de datos
+
+        rows.forEach(row => {
+            // Regex para manejar comas dentro de celdas de Excel
+            const columns = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            if (columns && columns.length >= 2) {
+                const clean = (val) => val ? val.replace(/^"|"$/g, "").trim() : "";
+                
+                // Columna B es la categoría (Pintores, Murales, etc.)
+                const catRaw = clean(columns[1]).toLowerCase();
+                if (!content[catRaw]) content[catRaw] = [];
+
+                content[catRaw].push({
+                    t: clean(columns[0]),   // Columna A: Título
+                    info: clean(columns[2]), // Columna C: Español
+                    en: clean(columns[3]) || "",
+                    zh: clean(columns[4]) || "",
+                    fr: clean(columns[5]) || "",
+                    de: clean(columns[6]) || "",
+                    nah: clean(columns[7]) || ""
+                });
+            }
+        });
+
+        // Extraer categorías encontradas
+        modes = Object.keys(content);
+        if (modes.length > 0) {
+            currentModeIdx = 0;
+            currentIndex = 0;
+            console.log("Sistema Listo. Categorías:", modes);
+            buildCarousel(); 
+        } else {
+            document.getElementById('infoPanel').innerText = "Error: No se hallaron datos en el Excel.";
+        }
+    } catch (error) {
+        console.error("Error de conexión:", error);
+        document.getElementById('infoPanel').innerText = "Error de conexión con Google Sheets.";
+    }
+}
+
+// ==========================================
+// 4. MOTOR VISUAL (CARRUSEL 3D)
+// ==========================================
+function buildCarousel() {
+    const container = document.getElementById('carouselContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const currentMode = modes[currentModeIdx];
+    const items = content[currentMode];
+    if (!items || items.length === 0) return;
+
+    const total = items.length;
+    const theta = 360 / total;
+    // Radio dinámico para que no se encimen (mínimo 150px)
+    const radius = Math.max(150, Math.round((50 / Math.tan(Math.PI / total))) + 100);
+
+    items.forEach((item, i) => {
+        const card = document.createElement('div');
+        card.className = 'cassette-card';
+        card.innerHTML = `<div class="cassette-label">${item.t}</div>`;
+        
+        const angle = i * theta;
+        card.style.transform = `rotateY(${angle}deg) translateZ(${radius}px)`;
+        
+        card.onclick = () => {
+            currentIndex = i;
+            updateSelection();
+            playCurrent();
+        };
+        container.appendChild(card);
+    });
+    
+    updateSelection();
+}
+
+function updateSelection() {
+    const cards = document.querySelectorAll('.cassette-card');
+    if (cards.length === 0) return;
+
+    const theta = 360 / cards.length;
+    const container = document.getElementById('carouselContainer');
+    container.style.transform = `rotateY(${-currentIndex * theta}deg)`;
+    
+    cards.forEach((card, i) => {
+        card.classList.toggle('active', i === currentIndex);
+    });
+
+    const m = content[modes[currentModeIdx]][currentIndex];
+    document.getElementById('infoPanel').innerText = m.info;
+    document.getElementById('currentTitle').innerText = m.t;
+}
+
+// ==========================================
+// 5. SISTEMA DE AUDIO (MULTILINGÜE)
+// ==========================================
+function playCurrent() {
+    stopAudioForce();
+    const m = content[modes[currentModeIdx]][currentIndex];
+    const langMap = { 'es-MX': 'info', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
+    
+    let text = m[langMap[currentLang]] || m.info;
+    let processedText = preparePhoneticText(text, currentLang);
+
+    const msg = new SpeechSynthesisUtterance(processedText);
+    msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang;
+
+    if (currentLang === 'nah-MX') {
+        msg.rate = 0.6;
+        msg.pitch = 0.8;
+    }
+
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => v.lang.includes(msg.lang.split('-')[0]) && v.name.includes('Google'));
+    if(preferred) msg.voice = preferred;
+
+    window.speechSynthesis.speak(msg);
+}
+
+function stopAudioForce() {
+    window.speechSynthesis.cancel();
+}
+
+// ==========================================
+// 6. DINÁMICAS (JUEGOS)
+// ==========================================
+function startTrivia() {
+    const items = content[modes[currentModeIdx]];
+    if (!items || items.length < 2) return;
+
+    const correctIdx = Math.floor(Math.random() * items.length);
+    const correctItem = items[correctIdx];
+
+    let wrongIdx;
+    do { wrongIdx = Math.floor(Math.random() * items.length); } while (wrongIdx === correctIdx);
+
+    const options = [correctItem.t, items[wrongIdx].t].sort(() => Math.random() - 0.5);
+
+    const panel = document.getElementById('infoPanel');
+    panel.innerHTML = `
+        <div style="border: 1px solid #00ff00; padding: 10px; background: rgba(0,0,0,0.8);">
+            <p style="color: #00ff00;">RETO: ¿Quién es?</p>
+            <p>"${correctItem.info.substring(0, 100)}..."</p>
+            <button onclick="checkAns('${options[0]}','${correctItem.t}')" style="background:#222;color:#0f0;border:1px solid #0f0;margin:5px;cursor:pointer;">${options[0]}</button>
+            <button onclick="checkAns('${options[1]}','${correctItem.t}')" style="background:#222;color:#0f0;border:1px solid #0f0;margin:5px;cursor:pointer;">${options[1]}</button>
+        </div>
+    `;
+}
+
+function checkAns(sel, corr) {
+    const panel = document.getElementById('infoPanel');
+    if (sel === corr) {
+        panel.innerHTML = `<p style="color:#0f0;">¡CORRECTO! 🎯 Es ${corr}.</p><button onclick="buildCarousel()" style="background:#222;color:#0f0;border:1px solid #0f0;cursor:pointer;">VOLVER</button>`;
+    } else {
+        panel.innerHTML = `<p style="color:#f44;">ERROR ❌ Era ${corr}.</p><button onclick="startTrivia()" style="background:#222;color:#f44;border:1px solid #f44;cursor:pointer;">REINTENTAR</button>`;
+    }
+}
+
+// ==========================================
+// 7. INICIALIZACIÓN Y FIRMA
+// ==========================================
+document.addEventListener('DOMContentLoaded', loadDataFromSheets);
+
+/*
+             01          10
+            0111        1110
+           0111110000111111
+          011111111111111111
+          111111111111111111
+          110011111111110011
+          110011111111110011
+          011111100001111110
+           0111111111111110
+            01111111111110
+             111111111111
+            11111111111111
+           1111111111111111
+          111111111111111111
+          111111111111111111
+          011111111111111110
+           0111111111111110
+            00000000000000
+    [ OSAKA VISION PRO - BY SAÚL - 2026 ]
+*/
+</script>
+</body>
+</html>
