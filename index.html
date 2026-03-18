@@ -135,27 +135,52 @@ let langIdx = 0;
 // 2. INICIO DE EXPERIENCIA
 function initExperience() {
     document.getElementById('welcome-screen').style.display = 'none';
-    loadDataFromSheets();
+    // El audio y carrusel ya estarán listos porque cargamos al inicio
 }
 
-// 3. CARGA DINÁMICA
+// 3. CARGA DINÁMICA DE DISEÑO Y DATOS
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
+    
     try {
         const response = await fetch(url);
         const data = await response.text();
-        const rows = data.split(/\r?\n/).filter(row => row.trim() !== "").slice(1);
+        const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
 
+        // --- FILA 1 (A1): TÍTULO DINÁMICO ---
+        if (rows[0]) {
+            const titleA1 = rows[0].split(',')[0].replace(/"/g, "");
+            document.querySelector('.retro-title').innerHTML = titleA1.replace(/\\n/g, '<br>');
+        }
+
+        // --- FILA 2 (A2, B2, C2): DISEÑO DINÁMICO ---
+        if (rows[1]) {
+            const configCols = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            const bgColor = configCols[0].replace(/"/g, "").trim();      // A2
+            const fontTitle = configCols[1] ? configCols[1].replace(/"/g, "").trim() : "'Press Start 2P', cursive"; // B2
+            const titleColor = configCols[2] ? configCols[2].replace(/"/g, "").trim() : "#D04F2C"; // C2
+
+            // Aplicar Estilos
+            document.body.style.backgroundColor = bgColor;
+            document.getElementById('welcome-screen').style.backgroundColor = bgColor;
+            
+            const titleElement = document.querySelector('.retro-title');
+            titleElement.style.fontFamily = fontTitle;
+            titleElement.style.color = titleColor;
+        }
+
+        // --- FILA 3 EN ADELANTE: CONTENIDO ---
         content = {}; 
-        rows.forEach(row => {
+        rows.slice(2).forEach(row => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if (cols.length >= 2) {
+            if (cols.length >= 3) {
                 const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
-                const cat = clean(cols[1]).toLowerCase();
+                const cat = clean(cols[0]).toLowerCase();
                 if (!content[cat]) content[cat] = [];
+                
                 content[cat].push({
-                    t: clean(cols[0]), info: clean(cols[2]),
-                    en: clean(cols[3]), zh: clean(cols[4]),
+                    t: clean(cols[1]),
+                    info: clean(cols[2]), en: clean(cols[3]), zh: clean(cols[4]),
                     fr: clean(cols[5]), de: clean(cols[6]), nah: clean(cols[7])
                 });
             }
@@ -167,101 +192,82 @@ async function loadDataFromSheets() {
             currentIndex = 0;
             buildCarousel();
         }
-    } catch (e) { console.error("Error en Sheets:", e); }
+        
+    } catch (e) {
+        console.error("Error cargando configuración desde Excel:", e);
+    }
 }
 
-// 4. MOTOR DEL CARRUSEL
+// 4. MOTOR VISUAL
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
     container.innerHTML = '';
     const items = content[modes[currentModeIdx]];
     const total = items.length;
     const theta = 360 / total;
-    // Radio dinámico para visibilidad
-    const radius = Math.max(160, Math.round((70 / Math.tan(Math.PI / total))) + 80);
+    const radius = Math.max(200, Math.round((70 / Math.tan(Math.PI / total))) + 100);
 
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
         card.innerHTML = `<div style="font-size:8px; text-align:center; padding:5px; color:white;">${item.t}</div>`;
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
-        card.onclick = () => { 
-            stopAudioForce();
-            currentIndex = i; 
-            updateSelection(); 
-        };
+        card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
         container.appendChild(card);
     });
-    
     document.getElementById('mode-label').innerText = modes[currentModeIdx].toUpperCase();
     updateSelection();
 }
 
-// 5. CONTROLES DE NAVEGACIÓN
-function rotateCarousel(dir) {
-    stopAudioForce();
-    const items = content[modes[currentModeIdx]];
-    currentIndex = (currentIndex + dir + items.length) % items.length;
-    updateSelection();
-}
-
-function nextMode() {
-    stopAudioForce();
-    currentModeIdx = (currentModeIdx + 1) % modes.length;
-    currentIndex = 0;
-    // Animación de la perilla
-    document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
-    buildCarousel();
-}
-
-function toggleLanguage() {
-    stopAudioForce();
-    langIdx = (langIdx + 1) % langOptions.length;
-    currentLang = langOptions[langIdx];
-    // Animación perilla lenguaje
-    document.getElementById('lang-knob').style.transform = `rotate(${langIdx * 60}deg)`;
-    updateSelection(); // Actualiza texto en panel
-}
-
+// 5. NAVEGACIÓN Y AUDIO
 function updateSelection() {
     const cards = document.querySelectorAll('.cassette-card');
     if (cards.length === 0) return;
     const theta = 360 / cards.length;
     document.getElementById('carouselContainer').style.transform = `rotateY(${-currentIndex * theta}deg)`;
-    
     cards.forEach((card, i) => card.classList.toggle('active', i === currentIndex));
     
     const m = content[modes[currentModeIdx]][currentIndex];
-    const langMap = { 'es-MX': 'info', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
-    
-    document.getElementById('infoPanel').innerText = m[langMap[currentLang]] || m.info;
-    document.getElementById('currentTitle').innerText = `${m.t} [${currentLang.split('-')[0].toUpperCase()}]`;
+    document.getElementById('currentTitle').innerText = m.t;
 }
 
-// 6. AUDIO Y DINÁMICAS
 function playCurrent() {
-    stopAudioForce();
+    window.speechSynthesis.cancel();
     const m = content[modes[currentModeIdx]][currentIndex];
     const langMap = { 'es-MX': 'info', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
-    let rawText = m[langMap[currentLang]] || m.info;
-
-    const msg = new SpeechSynthesisUtterance(rawText);
-    msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang; 
+    const text = m[langMap[currentLang]] || m.info;
     
-    if (currentLang === 'nah-MX') { msg.rate = 0.6; msg.pitch = 0.8; }
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang;
     window.speechSynthesis.speak(msg);
 }
 
-function stopAudioForce() { window.speechSynthesis.cancel(); }
-
-function startTrivia() {
-    const items = content[modes[currentModeIdx]];
-    if (!items || items.length < 2) return;
-    const correct = items[Math.floor(Math.random() * items.length)];
-    const panel = document.getElementById('infoPanel');
-    panel.innerHTML = `<div style="color:#0f0;">ADIVINA: "${correct.info.substring(0,60)}..."</div>
-    <button onclick="buildCarousel()" style="color:#fff; background:#000; border:1px solid #0f0; margin-top:5px; cursor:pointer; font-family:inherit; font-size:10px;">CERRAR</button>`;
+// 6. PERILLAS Y BOTONES
+function nextMode() {
+    window.speechSynthesis.cancel();
+    currentModeIdx = (currentModeIdx + 1) % modes.length;
+    currentIndex = 0;
+    document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
+    buildCarousel();
 }
+
+function toggleLanguage() {
+    window.speechSynthesis.cancel();
+    langIdx = (langIdx + 1) % langOptions.length;
+    currentLang = langOptions[langIdx];
+    document.getElementById('lang-knob').style.transform = `rotate(${langIdx * 60}deg)`;
+    playCurrent();
+}
+
+function rotateCarousel(dir) {
+    window.speechSynthesis.cancel();
+    const items = content[modes[currentModeIdx]];
+    currentIndex = (currentIndex + dir + items.length) % items.length;
+    updateSelection();
+}
+
+// Cargar todo al inicio
+document.addEventListener('DOMContentLoaded', loadDataFromSheets);
 </script>
 </body>
 </html>
