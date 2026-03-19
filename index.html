@@ -123,9 +123,21 @@
 </div>
 
 <script>
-// 1. VARIABLES DE ESTADO
-let db = []; // Base de datos cruda
-let content = {}; // Datos agrupados por categoría
+// ==========================================
+// 1. FUNCIONES DE INICIO (ESTRICTA PRIORIDAD)
+// ==========================================
+// Definimos la función directamente en el objeto window para que el botón SIEMPRE la encuentre
+window.initExperience = function() {
+    console.log("Osaka Vision Pro: Iniciando...");
+    const welcome = document.getElementById('welcome-screen');
+    if (welcome) welcome.style.display = 'none';
+    
+    // Si los datos ya cargaron, construimos. Si no, loadData lo hará al terminar.
+    if (modes.length > 0) buildCarousel();
+};
+
+// Variables de estado
+let content = {}; 
 let modes = [];
 let currentModeIdx = 0;
 let currentIndex = 0;
@@ -133,7 +145,9 @@ let currentLang = 'es-MX';
 const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX'];
 let langIdx = 0;
 
-// 2. CARGA DE DATOS (Fila 1 y 2 para técnica, Fila 3+ para contenido)
+// ==========================================
+// 2. CARGA DE DATOS Y DISEÑO (Fila 1, 2 y 3+)
+// ==========================================
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     
@@ -142,64 +156,87 @@ async function loadDataFromSheets() {
         const data = await response.text();
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
 
-        // --- FILA 1 Y 2: DISEÑO TÉCNICO ---
-        if (rows[0]) { /* A1: Título */ }
-        if (rows[1]) { /* A2-H2: Colores/Fuentes */ 
-            const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            document.body.style.backgroundColor = config[3]?.replace(/"/g, "") || "#fffaf0";
+        // --- FILA 1 (A1): TÍTULO DINÁMICO ---
+        if (rows[0]) {
+            const titleA1 = rows[0].split(',')[0].replace(/"/g, "");
+            const titleElement = document.querySelector('.retro-title');
+            if(titleElement) titleElement.innerHTML = titleA1.replace(/\\n/g, '<br>');
         }
 
-        // --- FILA 3 EN ADELANTE: PROCESAMIENTO ---
-        content = {}; 
-        let lastValidCat = "";
+        // --- FILA 2 (A2-H2): CONTROL DE ESTILO ---
+        if (rows[1]) {
+            const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-        // Empezamos en i=2 (que es la fila 3 del Excel)
-        rows.slice(2).forEach(row => {
+            // Aplicamos los estilos que definiste (A2 a H2)
+            document.body.style.backgroundColor = clean(config[3]); // D2: Fondo
+            document.body.style.fontFamily = clean(config[1]);      // B2: Tipografía
+            
+            const titleEl = document.querySelector('.retro-title');
+            if(titleEl) {
+                titleEl.style.color = clean(config[2]);             // C2: Color Título
+                titleEl.style.fontFamily = clean(config[1]);
+            }
+            
+            const welcome = document.getElementById('welcome-screen');
+            if(welcome) welcome.style.backgroundColor = clean(config[3]);
+
+            // Guardamos colores de casetes para buildCarousel
+            window.caseteColors = { bg: clean(config[5]), txt: clean(config[4]) };
+        }
+
+        // --- FILA 4 EN ADELANTE: CATEGORÍAS Y CASSETTES ---
+        content = {}; 
+        let lastCat = "";
+        rows.slice(3).forEach(row => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length >= 2) {
-                const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+                const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+                let cat = cleanV(cols[0]).toLowerCase();
                 
-                let cat = clean(cols[0]); // Columna A
-                let title = clean(cols[1]); // Columna B
+                if (cat === "" && lastCat !== "") cat = lastCat;
+                else if (cat !== "") lastCat = cat;
 
-                // Si la categoría viene vacía (celda combinada), usamos la última detectada
-                if (cat === "" && lastValidCat !== "") cat = lastValidCat;
-                else if (cat !== "") lastValidCat = cat;
-
-                if (cat && title) {
+                if (cat !== "") {
                     if (!content[cat]) content[cat] = [];
                     content[cat].push({
-                        t: title,
-                        es: clean(cols[2]), en: clean(cols[3]), zh: clean(cols[4]),
-                        fr: clean(cols[5]), de: clean(cols[6]), nah: clean(cols[7])
+                        t: cleanV(cols[1]), // Columna B: Título
+                        es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
+                        fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7])
                     });
                 }
             }
         });
 
         modes = Object.keys(content);
-        if (modes.length > 0) {
-            currentModeIdx = 0;
-            currentIndex = 0;
+        // Si el usuario ya dio clic en comenzar, dibujamos de inmediato
+        if (modes.length > 0 && document.getElementById('welcome-screen').style.display === 'none') {
             buildCarousel();
         }
-    } catch (e) { console.error("Error cargando Sheets:", e); }
+    } catch (e) { console.error("Error en Sheets:", e); }
 }
 
-// 3. CONSTRUCCIÓN DEL CARRUSEL (Dependiente del Modo)
+// ==========================================
+// 3. MOTOR DEL CARRUSEL Y NAVEGACIÓN
+// ==========================================
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
+    if(!container) return;
     container.innerHTML = '';
     
-    const items = content[modes[currentModeIdx]]; // Solo casetes de esta categoría
+    const items = content[modes[currentModeIdx]];
     const total = items.length;
     const theta = 360 / total;
-    const radius = Math.max(220, Math.round((80 / Math.tan(Math.PI / total))) + 100);
+    const radius = Math.max(220, Math.round((75 / Math.tan(Math.PI / total))) + 100);
 
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
-        card.innerHTML = `<div class="cassette-label">${item.t}</div>`;
+        // Colores desde la Fila 2 del Excel
+        card.style.backgroundColor = window.caseteColors?.bg || '#D6742B';
+        card.style.color = window.caseteColors?.txt || 'white';
+        
+        card.innerHTML = `<div style="font-size:8px; text-align:center; padding:5px;">${item.t}</div>`;
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
         card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
         container.appendChild(card);
@@ -209,25 +246,34 @@ function buildCarousel() {
     updateSelection();
 }
 
-// 4. PERILLA DE MODO (Cambia Categorías)
+function updateSelection() {
+    const cards = document.querySelectorAll('.cassette-card');
+    if (cards.length === 0) return;
+    const theta = 360 / cards.length;
+    document.getElementById('carouselContainer').style.transform = `rotateY(${-currentIndex * theta}deg)`;
+    cards.forEach((card, i) => card.classList.toggle('active', i === currentIndex));
+    document.getElementById('currentTitle').innerText = content[modes[currentModeIdx]][currentIndex].t;
+}
+
+// ==========================================
+// 4. PERILLAS Y BOTONES (MODO, LANG, NEXT/RET)
+// ==========================================
 function nextMode() {
     window.speechSynthesis.cancel();
     currentModeIdx = (currentModeIdx + 1) % modes.length;
-    currentIndex = 0; // Reinicia al primer casete del nuevo modo
+    currentIndex = 0;
     document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
-    buildCarousel(); // Reconstruye el carrusel con los nuevos casetes
+    buildCarousel();
 }
 
-// 5. PERILLA DE LENGUAJE (Cambia Audio entre C y H)
 function toggleLanguage() {
     window.speechSynthesis.cancel();
     langIdx = (langIdx + 1) % langOptions.length;
     currentLang = langOptions[langIdx];
     document.getElementById('lang-knob').style.transform = `rotate(${langIdx * 60}deg)`;
-    playCurrent(); // Suena el mismo casete pero en el nuevo idioma
+    playCurrent();
 }
 
-// 6. BOTONES NEXT / RETURN (Navega en Columna B)
 function rotateCarousel(dir) {
     window.speechSynthesis.cancel();
     const items = content[modes[currentModeIdx]];
@@ -235,32 +281,28 @@ function rotateCarousel(dir) {
     updateSelection();
 }
 
-function updateSelection() {
-    const cards = document.querySelectorAll('.cassette-card');
-    if (cards.length === 0) return;
-    const theta = 360 / cards.length;
-    document.getElementById('carouselContainer').style.transform = `rotateY(${-currentIndex * theta}deg)`;
-    
-    cards.forEach((card, i) => card.classList.toggle('active', i === currentIndex));
-    document.getElementById('currentTitle').innerText = content[modes[currentModeIdx]][currentIndex].t;
-}
-
-// 7. AUDIO FINAL
+// ==========================================
+// 5. AUDIO Y DINÁMICAS
+// ==========================================
 function playCurrent() {
     window.speechSynthesis.cancel();
-    const item = content[modes[currentModeIdx]][currentIndex];
-    
-    // Mapeo dinámico de columnas C a H
+    const m = content[modes[currentModeIdx]][currentIndex];
     const langMap = { 'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
-    const textToSpeak = item[langMap[currentLang]] || item.es;
-
-    const msg = new SpeechSynthesisUtterance(textToSpeak);
-    msg.lang = (currentLang === 'nah-MX') ? 'es-MX' : currentLang;
-    if(currentLang === 'nah-MX') { msg.rate = 0.7; msg.pitch = 0.8; }
-    
+    const text = m[langMap[currentLang]] || m.es;
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang;
     window.speechSynthesis.speak(msg);
 }
 
+function startTrivia() {
+    const items = content[modes[currentModeIdx]];
+    if (!items || items.length < 2) return;
+    const correct = items[Math.floor(Math.random() * items.length)];
+    // Aquí puedes personalizar el diseño de la trivia usando el color G2 y H2
+    alert("Dinámica: ¿Quién es el autor de este audio?");
+}
+
+// CARGA INICIAL
 document.addEventListener('DOMContentLoaded', loadDataFromSheets);
 </script>
 </body>
