@@ -123,20 +123,7 @@
 </div>
 
 <script>
-// ==========================================
-// 1. FUNCIONES DE INICIO (ESTRICTA PRIORIDAD)
-// ==========================================
-// Definimos la función directamente en el objeto window para que el botón SIEMPRE la encuentre
-window.initExperience = function() {
-    console.log("Osaka Vision Pro: Iniciando...");
-    const welcome = document.getElementById('welcome-screen');
-    if (welcome) welcome.style.display = 'none';
-    
-    // Si los datos ya cargaron, construimos. Si no, loadData lo hará al terminar.
-    if (modes.length > 0) buildCarousel();
-};
-
-// Variables de estado
+// 1. CONFIGURACIÓN DE ESTADO
 let content = {}; 
 let modes = [];
 let currentModeIdx = 0;
@@ -145,9 +132,14 @@ let currentLang = 'es-MX';
 const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX'];
 let langIdx = 0;
 
-// ==========================================
-// 2. CARGA DE DATOS Y DISEÑO (Fila 1, 2 y 3+)
-// ==========================================
+// 2. FUNCIÓN DE INICIO (Blindada para el botón onclick)
+window.initExperience = function() {
+    const welcome = document.getElementById('welcome-screen');
+    if (welcome) welcome.style.display = 'none';
+    if (modes.length > 0) buildCarousel();
+};
+
+// 3. CARGA DINÁMICA: FILA 2 (DISEÑO) Y FILA 3+ (DATOS)
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     
@@ -156,51 +148,62 @@ async function loadDataFromSheets() {
         const data = await response.text();
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
 
-        // --- FILA 1 (A1): TÍTULO DINÁMICO ---
-        if (rows[0]) {
-            const titleA1 = rows[0].split(',')[0].replace(/"/g, "");
-            const titleElement = document.querySelector('.retro-title');
-            if(titleElement) titleElement.innerHTML = titleA1.replace(/\\n/g, '<br>');
-        }
-
-        // --- FILA 2 (A2-H2): CONTROL DE ESTILO ---
+        // --- FILA 2: CONTROL DE DISEÑO (A2 a H2) ---
         if (rows[1]) {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-            // Aplicamos los estilos que definiste (A2 a H2)
-            document.body.style.backgroundColor = clean(config[3]); // D2: Fondo
-            document.body.style.fontFamily = clean(config[1]);      // B2: Tipografía
-            
+            const fontName    = clean(config[1]) || "'Press Start 2P'";
+            const colorTitulo = clean(config[2]); 
+            const colorFondo  = clean(config[3]); 
+            const colorFuente = clean(config[4]); 
+            const colorCasete = clean(config[5]); // F2
+            const colorBtnDin = clean(config[6]); // G2
+            const colorBgDin  = clean(config[7]); // H2
+
+            // Aplicación de Estilos Globales
+            document.body.style.backgroundColor = colorFondo;
+            document.body.style.fontFamily = fontName;
+            document.body.style.color = colorFuente;
+
             const titleEl = document.querySelector('.retro-title');
             if(titleEl) {
-                titleEl.style.color = clean(config[2]);             // C2: Color Título
-                titleEl.style.fontFamily = clean(config[1]);
+                titleEl.style.color = colorTitulo;
+                titleEl.style.fontFamily = fontName;
             }
-            
-            const welcome = document.getElementById('welcome-screen');
-            if(welcome) welcome.style.backgroundColor = clean(config[3]);
 
-            // Guardamos colores de casetes para buildCarousel
-            window.caseteColors = { bg: clean(config[5]), txt: clean(config[4]) };
+            const welcome = document.getElementById('welcome-screen');
+            if(welcome) welcome.style.backgroundColor = colorFondo;
+
+            // Guardamos para uso posterior en elementos dinámicos
+            window.designTheme = { 
+                caseteBg: colorCasete, 
+                caseteTxt: colorFuente,
+                btnDin: colorBtnDin,
+                bgDin: colorBgDin
+            };
         }
 
-        // --- FILA 4 EN ADELANTE: CATEGORÍAS Y CASSETTES ---
+        // --- FILA 3 EN ADELANTE: CATEGORÍAS Y CASSETTES ---
         content = {}; 
         let lastCat = "";
-        rows.slice(3).forEach(row => {
+        
+        rows.slice(2).forEach(row => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length >= 2) {
                 const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
-                let cat = cleanV(cols[0]).toLowerCase();
                 
+                let cat = cleanV(cols[0]); // Columna A (Categoría)
+                let title = cleanV(cols[1]); // Columna B (Título Casete)
+
+                // Lógica de celdas combinadas/vacías
                 if (cat === "" && lastCat !== "") cat = lastCat;
                 else if (cat !== "") lastCat = cat;
 
-                if (cat !== "") {
+                if (cat && title) {
                     if (!content[cat]) content[cat] = [];
                     content[cat].push({
-                        t: cleanV(cols[1]), // Columna B: Título
+                        t: title,
                         es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
                         fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7])
                     });
@@ -209,16 +212,14 @@ async function loadDataFromSheets() {
         });
 
         modes = Object.keys(content);
-        // Si el usuario ya dio clic en comenzar, dibujamos de inmediato
+        // Si el usuario ya entró, refrescamos
         if (modes.length > 0 && document.getElementById('welcome-screen').style.display === 'none') {
             buildCarousel();
         }
-    } catch (e) { console.error("Error en Sheets:", e); }
+    } catch (e) { console.error("Error cargando Excel:", e); }
 }
 
-// ==========================================
-// 3. MOTOR DEL CARRUSEL Y NAVEGACIÓN
-// ==========================================
+// 4. MOTOR VISUAL (Agrupa por Categoría)
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
     if(!container) return;
@@ -227,22 +228,44 @@ function buildCarousel() {
     const items = content[modes[currentModeIdx]];
     const total = items.length;
     const theta = 360 / total;
-    const radius = Math.max(220, Math.round((75 / Math.tan(Math.PI / total))) + 100);
+    const radius = Math.max(220, Math.round((80 / Math.tan(Math.PI / total))) + 100);
 
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
-        // Colores desde la Fila 2 del Excel
-        card.style.backgroundColor = window.caseteColors?.bg || '#D6742B';
-        card.style.color = window.caseteColors?.txt || 'white';
         
-        card.innerHTML = `<div style="font-size:8px; text-align:center; padding:5px;">${item.t}</div>`;
+        // Aplicamos color de F2 (o imagen si es URL)
+        if (window.designTheme.caseteBg.startsWith('http')) {
+            card.style.backgroundImage = `url(${window.designTheme.caseteBg})`;
+            card.style.backgroundSize = 'cover';
+        } else {
+            card.style.backgroundColor = window.designTheme.caseteBg;
+        }
+        card.style.color = window.designTheme.caseteTxt;
+        
+        card.innerHTML = `<div class="cassette-label" style="font-size:7px; text-align:center;">${item.t}</div>`;
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
         card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
         container.appendChild(card);
     });
     
     document.getElementById('mode-label').innerText = modes[currentModeIdx].toUpperCase();
+    updateSelection();
+}
+
+// 5. NAVEGACIÓN (Perillas y Botones)
+function nextMode() {
+    window.speechSynthesis.cancel();
+    currentModeIdx = (currentModeIdx + 1) % modes.length;
+    currentIndex = 0; // Al cambiar categoría, volvemos al primer casete
+    document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
+    buildCarousel();
+}
+
+function rotateCarousel(dir) {
+    window.speechSynthesis.cancel();
+    const items = content[modes[currentModeIdx]];
+    currentIndex = (currentIndex + dir + items.length) % items.length;
     updateSelection();
 }
 
@@ -255,17 +278,7 @@ function updateSelection() {
     document.getElementById('currentTitle').innerText = content[modes[currentModeIdx]][currentIndex].t;
 }
 
-// ==========================================
-// 4. PERILLAS Y BOTONES (MODO, LANG, NEXT/RET)
-// ==========================================
-function nextMode() {
-    window.speechSynthesis.cancel();
-    currentModeIdx = (currentModeIdx + 1) % modes.length;
-    currentIndex = 0;
-    document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
-    buildCarousel();
-}
-
+// 6. AUDIO E IDIOMAS
 function toggleLanguage() {
     window.speechSynthesis.cancel();
     langIdx = (langIdx + 1) % langOptions.length;
@@ -274,35 +287,17 @@ function toggleLanguage() {
     playCurrent();
 }
 
-function rotateCarousel(dir) {
-    window.speechSynthesis.cancel();
-    const items = content[modes[currentModeIdx]];
-    currentIndex = (currentIndex + dir + items.length) % items.length;
-    updateSelection();
-}
-
-// ==========================================
-// 5. AUDIO Y DINÁMICAS
-// ==========================================
 function playCurrent() {
     window.speechSynthesis.cancel();
-    const m = content[modes[currentModeIdx]][currentIndex];
+    const item = content[modes[currentModeIdx]][currentIndex];
     const langMap = { 'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
-    const text = m[langMap[currentLang]] || m.es;
+    const text = item[langMap[currentLang]] || item.es;
+    
     const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = currentLang === 'nah-MX' ? 'es-MX' : currentLang;
+    msg.lang = (currentLang === 'nah-MX') ? 'es-MX' : currentLang;
     window.speechSynthesis.speak(msg);
 }
 
-function startTrivia() {
-    const items = content[modes[currentModeIdx]];
-    if (!items || items.length < 2) return;
-    const correct = items[Math.floor(Math.random() * items.length)];
-    // Aquí puedes personalizar el diseño de la trivia usando el color G2 y H2
-    alert("Dinámica: ¿Quién es el autor de este audio?");
-}
-
-// CARGA INICIAL
 document.addEventListener('DOMContentLoaded', loadDataFromSheets);
 </script>
 </body>
