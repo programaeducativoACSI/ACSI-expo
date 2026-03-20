@@ -123,7 +123,7 @@
 </div>
 
 <script>
-// 1. CONFIGURACIÓN DE ESTADO
+// 1. ESTADO GLOBAL
 let content = {}; 
 let modes = [];
 let currentModeIdx = 0;
@@ -132,14 +132,14 @@ let currentLang = 'es-MX';
 const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX'];
 let langIdx = 0;
 
-// 2. FUNCIÓN DE INICIO (Blindada para el botón onclick)
+// 2. INICIO DE EXPERIENCIA
 window.initExperience = function() {
     const welcome = document.getElementById('welcome-screen');
     if (welcome) welcome.style.display = 'none';
     if (modes.length > 0) buildCarousel();
 };
 
-// 3. CARGA DINÁMICA: FILA 2 (DISEÑO) Y FILA 3+ (DATOS)
+// 3. CARGA DINÁMICA DESDE GOOGLE SHEETS
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     
@@ -148,55 +148,62 @@ async function loadDataFromSheets() {
         const data = await response.text();
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
 
-        // --- FILA 2: CONTROL DE DISEÑO (A2 a H2) ---
+        // --- FILA 2 (Índice 1): CONTROL DE DISEÑO Y TÍTULO PRINCIPAL ---
         if (rows[1]) {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-            const fontName    = clean(config[1]) || "'Press Start 2P'";
-            const colorTitulo = clean(config[2]); 
-            const colorFondo  = clean(config[3]); 
-            const colorFuente = clean(config[4]); 
-            const colorCasete = clean(config[5]); // F2
-            const colorBtnDin = clean(config[6]); // G2
-            const colorBgDin  = clean(config[7]); // H2
+            const tituloA2    = clean(config[0]); // A2: Título de Inicio
+            const fontB2      = clean(config[1]) || "'Press Start 2P'"; // B2
+            const colorC2     = clean(config[2]); // C2: Color Título
+            const colorD2     = clean(config[3]); // D2: Fondo General
+            const colorE2     = clean(config[4]); // E2: Color Fuente Casetes
+            const assetF2     = clean(config[5]); // F2: LINK DE IMAGEN O COLOR
+            const colorG2     = clean(config[6]); // G2: Color Botón Dinámicas
+            const colorH2     = clean(config[7]); // H2: Fondo Menú Dinámicas
 
-            // Aplicación de Estilos Globales
-            document.body.style.backgroundColor = colorFondo;
-            document.body.style.fontFamily = fontName;
-            document.body.style.color = colorFuente;
-
+            // Aplicar Título Principal desde A2
             const titleEl = document.querySelector('.retro-title');
             if(titleEl) {
-                titleEl.style.color = colorTitulo;
-                titleEl.style.fontFamily = fontName;
+                titleEl.innerHTML = tituloA2.replace(/\\n/g, '<br>');
+                titleEl.style.color = colorC2;
+                titleEl.style.fontFamily = fontB2;
             }
 
+            // Estilos de Pantalla y Cuerpo
+            document.body.style.backgroundColor = colorD2;
+            document.body.style.fontFamily = fontB2;
             const welcome = document.getElementById('welcome-screen');
-            if(welcome) welcome.style.backgroundColor = colorFondo;
+            if(welcome) welcome.style.backgroundColor = colorD2;
 
-            // Guardamos para uso posterior en elementos dinámicos
-            window.designTheme = { 
-                caseteBg: colorCasete, 
-                caseteTxt: colorFuente,
-                btnDin: colorBtnDin,
-                bgDin: colorBgDin
+            // Guardamos el tema para los casetes
+            window.activeTheme = { 
+                caseteVisual: assetF2, 
+                caseteTxt: colorE2,
+                btnDin: colorG2,
+                bgDin: colorH2 
             };
         }
 
-        // --- FILA 3 EN ADELANTE: CATEGORÍAS Y CASSETTES ---
+        // --- FILA 3 O 4 EN ADELANTE: CONTENIDO ---
         content = {}; 
         let lastCat = "";
         
+        // Empezamos a leer datos desde la fila 3 (índice 2) 
+        // o fila 4 (índice 3) si tienes encabezados extra. 
+        // Usaremos slice(2) para saltar Fila 1 (Encabezados) y Fila 2 (Config).
         rows.slice(2).forEach(row => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length >= 2) {
                 const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
                 
-                let cat = cleanV(cols[0]); // Columna A (Categoría)
-                let title = cleanV(cols[1]); // Columna B (Título Casete)
+                let cat = cleanV(cols[0]); // Columna A
+                let title = cleanV(cols[1]); // Columna B
 
-                // Lógica de celdas combinadas/vacías
+                // Si la fila es un encabezado repetido como "Título" o "Categoría", la saltamos
+                if (title.toLowerCase() === "título" || cat.toLowerCase() === "categoria") return;
+
+                // Lógica de "Arrastre" para celdas combinadas en A
                 if (cat === "" && lastCat !== "") cat = lastCat;
                 else if (cat !== "") lastCat = cat;
 
@@ -212,14 +219,13 @@ async function loadDataFromSheets() {
         });
 
         modes = Object.keys(content);
-        // Si el usuario ya entró, refrescamos
         if (modes.length > 0 && document.getElementById('welcome-screen').style.display === 'none') {
             buildCarousel();
         }
-    } catch (e) { console.error("Error cargando Excel:", e); }
+    } catch (e) { console.error("Error de sincronización con Sheets:", e); }
 }
 
-// 4. MOTOR VISUAL (Agrupa por Categoría)
+// 4. CONSTRUCCIÓN DEL CARRUSEL RESPONSIVO
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
     if(!container) return;
@@ -228,23 +234,28 @@ function buildCarousel() {
     const items = content[modes[currentModeIdx]];
     const total = items.length;
     const theta = 360 / total;
-    const radius = Math.max(220, Math.round((80 / Math.tan(Math.PI / total))) + 100);
+    // Radio responsivo: se ajusta según la cantidad de casetes (mínimo 200px)
+    const radius = Math.max(200, Math.round((75 / Math.tan(Math.PI / total))) + 80);
 
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
         
-        // Aplicamos color de F2 (o imagen si es URL)
-        if (window.designTheme.caseteBg.startsWith('http')) {
-            card.style.backgroundImage = `url(${window.designTheme.caseteBg})`;
-            card.style.backgroundSize = 'cover';
+        // LÓGICA F2: Si el texto en F2 tiene "http", lo pone como imagen de fondo
+        if (window.activeTheme.caseteVisual.includes('http')) {
+            card.style.backgroundImage = `url(${window.activeTheme.caseteVisual})`;
+            card.style.backgroundSize = '100% 100%';
+            card.style.backgroundRepeat = 'no-repeat';
+            card.style.backgroundColor = 'transparent';
+            card.style.border = 'none'; // Quita el borde si hay imagen
         } else {
-            card.style.backgroundColor = window.designTheme.caseteBg;
+            card.style.backgroundColor = window.activeTheme.caseteVisual;
         }
-        card.style.color = window.designTheme.caseteTxt;
         
-        card.innerHTML = `<div class="cassette-label" style="font-size:7px; text-align:center;">${item.t}</div>`;
+        card.style.color = window.activeTheme.caseteTxt;
+        card.innerHTML = `<div class="cassette-label" style="font-size: 7px; pointer-events: none;">${item.t}</div>`;
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
+        
         card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
         container.appendChild(card);
     });
@@ -253,11 +264,11 @@ function buildCarousel() {
     updateSelection();
 }
 
-// 5. NAVEGACIÓN (Perillas y Botones)
+// 5. NAVEGACIÓN
 function nextMode() {
     window.speechSynthesis.cancel();
     currentModeIdx = (currentModeIdx + 1) % modes.length;
-    currentIndex = 0; // Al cambiar categoría, volvemos al primer casete
+    currentIndex = 0;
     document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
     buildCarousel();
 }
@@ -278,7 +289,7 @@ function updateSelection() {
     document.getElementById('currentTitle').innerText = content[modes[currentModeIdx]][currentIndex].t;
 }
 
-// 6. AUDIO E IDIOMAS
+// 6. AUDIO (Columnas C a H)
 function toggleLanguage() {
     window.speechSynthesis.cancel();
     langIdx = (langIdx + 1) % langOptions.length;
