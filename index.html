@@ -121,14 +121,12 @@
     </div>
 
     <div class="controls-panel">
-        </div>
-</div>
         <div class="knob-container">
             <div id="mode-knob" class="knob" onclick="nextMode()"></div>
-            <span style="font-size:0.3rem; color:var(--color-oro);">MODO</span>
-        </div>
+            <span class="control-label">MODO</span>
+            <div id="mode-label" class="dynamic-label">MURALES</div> </div>
+
         <div style="display:flex; flex-direction:column; align-items:center;">
-            <div id="mode-label" style="font-size:0.35rem; color:var(--color-amarillo);">MURALES</div>
             <div class="nav-buttons-container">
                 <button class="btn-yellow" onclick="rotateCarousel(-1)">RETURN</button>
                 <button class="btn-yellow" onclick="rotateCarousel(1)">NEXT</button>
@@ -138,11 +136,12 @@
                 <button class="btn-nav" style="background:var(--color-azul);" onclick="stopAudioForce()">STOP</button>
             </div>
         </div>
-        <div class="knob-container">
-            <div class="knob" onclick="toggleLanguage()"></div>
-            <span style="font-size:0.3rem; color:var(--color-oro);">LANG</span>
-        </div>
+       <div class="knob-container">
+            <div id="lang-knob" class="knob" onclick="toggleLanguage()"></div>
+            <span class="control-label">LANG</span>
+            <div id="lang-label" class="dynamic-label">ES</div> </div>
     </div>
+</div>
 </div>
 
 <script>
