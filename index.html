@@ -306,24 +306,47 @@ function updateSelection() {
     document.getElementById('currentTitle').innerText = content[modes[currentModeIdx]][currentIndex].t;
 }
 
-// 6. AUDIO (Columnas C a H)
+// 6. AUDIO (Columnas C a H) - Actualizado para ser silencioso
 function toggleLanguage() {
-    window.speechSynthesis.cancel();
+    // 1. Detenemos cualquier audio previo al girar
+    stopAudioForce(); 
+    
+    // 2. Cambiamos el idioma
     langIdx = (langIdx + 1) % langOptions.length;
     currentLang = langOptions[langIdx];
+    
+    // 3. Giramos la perilla visualmente
     document.getElementById('lang-knob').style.transform = `rotate(${langIdx * 60}deg)`;
-    playCurrent();
+    
+    // 4. Actualizamos el texto del indicador LANG (el que está bajo la perilla)
+    const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH'];
+    const langLabel = document.getElementById('lang-label');
+    if (langLabel) langLabel.innerText = langNames[langIdx];
+    
+    // 5. IMPORTANTE: Solo actualizamos la selección visual/texto, NO llamamos a playCurrent()
+    updateSelection();
 }
 
 function playCurrent() {
-    window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel(); // Limpiamos antes de empezar
     const item = content[modes[currentModeIdx]][currentIndex];
     const langMap = { 'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
     const text = item[langMap[currentLang]] || item.es;
     
     const msg = new SpeechSynthesisUtterance(text);
     msg.lang = (currentLang === 'nah-MX') ? 'es-MX' : currentLang;
+    
+    // Ajuste opcional para que el Náhuatl suene más natural
+    if(currentLang === 'nah-MX') { msg.rate = 0.8; msg.pitch = 0.9; }
+    
     window.speechSynthesis.speak(msg);
+}
+
+// ESTA ES LA FUNCIÓN QUE FALTABA PARA EL BOTÓN STOP
+function stopAudioForce() {
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', loadDataFromSheets);
