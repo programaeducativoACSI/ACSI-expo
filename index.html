@@ -151,7 +151,8 @@ let modes = [];
 let currentModeIdx = 0;
 let currentIndex = 0;
 let currentLang = 'es-MX';
-const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX'];
+const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX', 'it-IT', 'pt-BR'];
+const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT'];
 let langIdx = 0;
 
 // 2. INICIO DE EXPERIENCIA
@@ -307,30 +308,66 @@ function updateSelection() {
 }
 
 // 6. AUDIO (Columnas C a H) - Actualizado para ser silencioso
+// 6. AUDIO (Columnas C a H) - Actualizado para anunciar el idioma
 function toggleLanguage() {
-    // 1. Detenemos cualquier audio previo al girar
+    // 1. Detenemos cualquier audio previo
     stopAudioForce(); 
     
-    // 2. Cambiamos el idioma
+    // 2. Cambiamos el idioma en la lista (Ahora incluye IT y PT)
+    // Asegúrate de que tu variable langOptions tenga 8 elementos al inicio del script
     langIdx = (langIdx + 1) % langOptions.length;
     currentLang = langOptions[langIdx];
     
-    // 3. Giramos la perilla visualmente
-    document.getElementById('lang-knob').style.transform = `rotate(${langIdx * 60}deg)`;
+    // 3. Giramos la perilla visualmente (360 grados / 8 idiomas = 45 grados por clic)
+    const knob = document.getElementById('lang-knob');
+    if (knob) {
+        knob.style.transform = `rotate(${langIdx * 45}deg)`;
+    }
     
-    // 4. Actualizamos el texto del indicador LANG (el que está bajo la perilla)
-    const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH'];
+    // 4. Actualizamos el texto del indicador visual
+    const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT'];
     const langLabel = document.getElementById('lang-label');
-    if (langLabel) langLabel.innerText = langNames[langIdx];
+    if (langLabel) {
+        langLabel.innerText = langNames[langIdx];
+    }
+
+    // 5. La voz anuncia el idioma seleccionado (Incluyendo los nuevos)
+    const voiceAnnouncements = {
+        'es-MX': 'Español',
+        'en-US': 'English',
+        'zh-CN': 'Mandarín',
+        'fr-FR': 'Français',
+        'de-DE': 'Deutsch',
+        'nah-MX': 'Náhuatl',
+        'it-IT': 'Italiano',
+        'pt-BR': 'Português'
+    };
+
+    const announcement = new SpeechSynthesisUtterance(voiceAnnouncements[currentLang]);
     
-    // 5. IMPORTANTE: Solo actualizamos la selección visual/texto, NO llamamos a playCurrent()
+    // Configuramos la voz correcta para el anuncio
+    if (currentLang === 'nah-MX') {
+        announcement.lang = 'es-MX'; // Náhuatl leído con voz en español
+    } else {
+        announcement.lang = currentLang;
+    }
+    
+    announcement.pitch = 1.2; // Tono más agudo para el "asistente"
+    announcement.rate = 1;
+
+    window.speechSynthesis.speak(announcement);
+    
+    // 6. Actualizamos el texto del panel negro sin reproducir el contenido largo
     updateSelection();
 }
-
 function playCurrent() {
     window.speechSynthesis.cancel(); // Limpiamos antes de empezar
     const item = content[modes[currentModeIdx]][currentIndex];
-    const langMap = { 'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah' };
+   const langMap = { 
+    'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 
+    'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah',
+    'it-IT': 'it', 'pt-BR': 'pt' 
+};
     const text = item[langMap[currentLang]] || item.es;
     
     const msg = new SpeechSynthesisUtterance(text);
