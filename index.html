@@ -361,25 +361,39 @@ function toggleLanguage() {
     updateSelection();
 }
 function playCurrent() {
-    window.speechSynthesis.cancel(); // Limpiamos antes de empezar
+    stopAudioForce(); // Detenemos cualquier anuncio previo
+    
     const item = content[modes[currentModeIdx]][currentIndex];
-   const langMap = { 
-    'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 
-    'fr-FR': 'fr', 'de-DE': 'de', 'nah-MX': 'nah',
-    'it-IT': 'it', 'pt-BR': 'pt' 
-};
+    
+    // 1. ACTUALIZACIÓN DEL MAPA DE COLUMNAS
+    // Asegúrate de que coincida con el orden de tus columnas en Sheets
+    const langMap = { 
+        'es-MX': 'es', 
+        'en-US': 'en', 
+        'zh-CN': 'zh', 
+        'fr-FR': 'fr', 
+        'de-DE': 'de', 
+        'nah-MX': 'nah',
+        'it-IT': 'it', // Esto buscará en la columna de Italiano
+        'pt-BR': 'pt'  // Esto buscará en la columna de Portugués
+    };
+    
+    // Obtenemos el texto. Si no existe en el idioma, usa español por defecto
     const text = item[langMap[currentLang]] || item.es;
     
     const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = (currentLang === 'nah-MX') ? 'es-MX' : currentLang;
     
-    // Ajuste opcional para que el Náhuatl suene más natural
-    if(currentLang === 'nah-MX') { msg.rate = 0.8; msg.pitch = 0.9; }
+    // 2. ASIGNACIÓN DEL ACENTO CORRECTO
+    // Si es Náhuatl, usamos voz de México. Si no, usamos la del idioma seleccionado.
+    if (currentLang === 'nah-MX') {
+        msg.lang = 'es-MX';
+        msg.rate = 0.8;
+    } else {
+        msg.lang = currentLang; // Aquí es donde se activa el acento IT o PT
+    }
     
     window.speechSynthesis.speak(msg);
 }
-
-// ESTA ES LA FUNCIÓN QUE FALTABA PARA EL BOTÓN STOP
 function stopAudioForce() {
     if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
