@@ -232,11 +232,13 @@ async function loadDataFromSheets() {
 
                 if (cat && title) {
                     if (!content[cat]) content[cat] = [];
-                    content[cat].push({
-                        t: title,
-                        es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
-                        fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7])
-                    });
+                    // Busca esta parte dentro de loadDataFromSheets y verifica que tenga it y pt:
+content[cat].push({
+    t: title,
+    es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
+    fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
+    it: cleanV(cols[8]), pt: cleanV(cols[9]) // <-- ESTAS DOS LÍNEAS SON VITALES
+});
                 }
             }
         });
