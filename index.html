@@ -228,19 +228,16 @@ async function loadDataFromSheets() {
         const data = await response.text();
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
 
-        // --- FILA 2 (Índice 1): CONTROL DE DISEÑO Y TÍTULO PRINCIPAL ---
+        // 1. CONFIGURACIÓN (Fila 2)
         if (rows[1]) {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-            const tituloA2    = clean(config[0]); 
-            const fontB2      = clean(config[1]) || "'Press Start 2P'"; 
-            const colorC2     = clean(config[2]); 
-            const colorD2     = clean(config[3]); 
-            const colorE2     = clean(config[4]); 
-            const assetF2     = clean(config[5]); 
-            const colorG2     = clean(config[6]); 
-            const colorH2     = clean(config[7]); 
+            const tituloA2 = clean(config[0]);
+            const fontB2 = clean(config[1]) || "'Press Start 2P'";
+            const colorC2 = clean(config[2]);
+            const colorD2 = clean(config[3]);
+            const assetF2 = clean(config[5]);
 
             const titleEl = document.querySelector('.retro-title');
             if(titleEl) {
@@ -250,72 +247,76 @@ async function loadDataFromSheets() {
             }
 
             document.body.style.backgroundColor = colorD2;
-            document.body.style.fontFamily = fontB2;
             const welcome = document.getElementById('welcome-screen');
             if(welcome) welcome.style.backgroundColor = colorD2;
 
             window.activeTheme = { 
                 caseteVisual: assetF2, 
-                caseteTxt: colorE2,
-                btnDin: colorG2,
-                bgDin: colorH2 
+                caseteTxt: clean(config[4]),
+                btnDin: clean(config[6]),
+                bgDin: clean(config[7]) 
             };
         }
 
-        // --- PROCESAMIENTO DE CONTENIDO Y DINÁMICAS (Fila 3 en adelante) ---
-      // --- PROCESAMIENTO DE CONTENIDO Y DINÁMICAS ---
+        // 2. PROCESAMIENTO DE DATOS (Fila 3 en adelante)
         content = {}; 
         triviaPool = []; 
         let lastCat = "";
-        let currentEntry = null; // Para rastrear el personaje actual de trivia
+        let currentTriviaEntry = null;
 
         rows.slice(2).forEach((row) => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if (cols.length >= 2) {
-                const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
-                
-                // 1. LÓGICA DE CASETES (A-J)
-                let cat = cleanV(cols[0]); 
-                let title = cleanV(cols[1]); 
+            if (cols.length < 2) return; // Saltamos filas vacías o malformadas
 
-                if (title && title.toLowerCase() !== "título" && cat.toLowerCase() !== "categoria") {
-                    if (cat === "" && lastCat !== "") cat = lastCat;
-                    else if (cat !== "") lastCat = cat;
+            const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+            
+            // --- CARGA DE CASETES ---
+            let cat = cleanV(cols[0]); 
+            let title = cleanV(cols[1]); 
 
-                    if (!content[cat]) content[cat] = [];
-                    content[cat].push({
-                        t: title,
-                        es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
-                        fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
-                        it: cleanV(cols[8]), pt: cleanV(cols[9])
-                    });
+            if (title && title.toLowerCase() !== "título") {
+                if (cat === "" && lastCat !== "") cat = lastCat;
+                else if (cat !== "") lastCat = cat;
+
+                if (!content[cat]) content[cat] = [];
+                content[cat].push({
+                    t: title,
+                    es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
+                    fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
+                    it: cleanV(cols[8]), pt: cleanV(cols[9])
+                });
+            }
+
+            // --- CARGA DE TRIVIA (L=11, O=14) ---
+            // Usamos una lógica más flexible que el % 5 para evitar que el script se trabe
+            const pistaLocal = cleanV(cols[11]);
+            const respuestaLocal = cleanV(cols[14]);
+
+            if (respuestaLocal !== "") {
+                // Si la respuesta es distinta a la anterior, creamos un nuevo bloque
+                if (!currentTriviaEntry || currentTriviaEntry.respuesta !== respuestaLocal) {
+                    currentTriviaEntry = { respuesta: respuestaLocal, pistas: [] };
+                    triviaPool.push(currentTriviaEntry);
                 }
-
-                // 2. LÓGICA DE TRIVIA (L=11, O=14) - REFORZADA PARA CELDAS COMBINADAS
-                const pistaLocal = cleanV(cols[11]);   // Columna L
-                const respuestaLocal = cleanV(cols[14]); // Columna O
-
-                if (respuestaLocal !== "") {
-                    // Si la respuesta en O es nueva, creamos un nuevo bloque de personaje
-                    if (!currentEntry || currentEntry.respuesta !== respuestaLocal) {
-                        currentEntry = {
-                            respuesta: respuestaLocal,
-                            pistas: []
-                        };
-                        triviaPool.push(currentEntry);
-                    }
-                    
-                    // Si hay una pista en L y aún no tenemos 5 para este personaje, la agregamos
-                    if (pistaLocal !== "" && currentEntry.pistas.length < 5) {
-                        currentEntry.pistas.push(pistaLocal);
-                    }
+                // Añadimos pista si hay espacio (máximo 5)
+                if (pistaLocal !== "" && currentTriviaEntry.pistas.length < 5) {
+                    currentTriviaEntry.pistas.push(pistaLocal);
                 }
             }
         });
 
-        // Verificación en consola para que estés seguro
-        console.log("Murales cargados:", Object.keys(content));
-        console.log("Juegos de trivia detectados:", triviaPool.length);
+        modes = Object.keys(content);
+        if (modes.length > 0 && document.getElementById('welcome-screen').style.display === 'none') {
+            buildCarousel();
+        }
+        
+        console.log("Carga completa. Murales:", modes.length, "Trivias:", triviaPool.length);
+
+    } catch (e) { 
+        console.error("Error en el script:", e); 
+    }
+}
+
 
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
