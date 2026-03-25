@@ -145,17 +145,26 @@
 </div>
 
 <script>
-    function startTrivia() {
-    if (triviaPool.length === 0) return alert("No hay trivias cargadas en el Excel.");
+  function startTrivia() {
+    console.log("Intentando iniciar trivia. Pool actual:", triviaPool);
+    
+    if (!triviaPool || triviaPool.length === 0) {
+        return alert("No hay trivias cargadas en el Excel.");
+    }
 
-    // Elegimos uno de los 3 personajes aleatoriamente
+    // Elegimos uno de los personajes aleatoriamente
     currentTriviaItem = triviaPool[Math.floor(Math.random() * triviaPool.length)];
-    currentHintIdx = 0; // Empezamos con la pista 1
+    currentHintIdx = 0; 
 
     const panel = document.getElementById('infoPanel');
-    panel.style.display = "block";
-    
-    renderTriviaScreen();
+    if (panel) {
+        panel.style.display = "block";
+        // Asegúrate de que el panel no esté oculto por el carrusel
+        panel.style.zIndex = "1000"; 
+        renderTriviaScreen();
+    } else {
+        console.error("No se encontró el elemento infoPanel");
+    }
 }
 function revealNextHint() {
     if (currentHintIdx < 4) {
