@@ -145,6 +145,63 @@
 </div>
 
 <script>
+    function startTrivia() {
+    if (triviaPool.length === 0) return alert("No hay trivias cargadas en el Excel.");
+
+    // Elegimos uno de los 3 personajes aleatoriamente
+    currentTriviaItem = triviaPool[Math.floor(Math.random() * triviaPool.length)];
+    currentHintIdx = 0; // Empezamos con la pista 1
+
+    const panel = document.getElementById('infoPanel');
+    panel.style.display = "block";
+    
+    renderTriviaScreen();
+}
+function revealNextHint() {
+    if (currentHintIdx < 4) {
+        currentHintIdx++;
+        const hintBox = document.getElementById('hintBox');
+        const p = document.createElement('div');
+        p.style.cssText = "color:#0f0; font-size:0.35rem; margin-top:4px; border-top:1px solid #222; padding-top:4px;";
+        p.innerText = `Pista ${currentHintIdx + 1}: ${currentTriviaItem.pistas[currentHintIdx]}`;
+        hintBox.appendChild(p);
+
+        if (currentHintIdx === 4) {
+            document.getElementById('hintBtn').style.opacity = "0.5";
+            document.getElementById('hintBtn').disabled = true;
+        }
+    }
+}
+
+function verifyGuess() {
+    const guess = document.getElementById('userGuess').value.trim().toLowerCase();
+    const correct = currentTriviaItem.respuesta.toLowerCase();
+
+    if (guess === correct) {
+        alert("¡EXCELENTE! HAS ADIVINADO.");
+        updateSelection(); // Regresa al estado normal de la pantalla
+    } else {
+        alert("INCORRECTO. ¡USA OTRA PISTA!");
+    }
+}
+function renderTriviaScreen() {
+    const panel = document.getElementById('infoPanel');
+    panel.innerHTML = `
+        <div style="color:var(--color-oro); font-size:0.4rem; margin-bottom:8px;">¿QUIÉN ES?</div>
+        <div id="hintBox" style="background:#111; padding:8px; border:1px solid #333; min-height:40px; margin-bottom:10px;">
+            <div style="color:#0f0; font-size:0.35rem;">Pista 1: ${currentTriviaItem.pistas[0]}</div>
+        </div>
+        
+        <input type="text" id="userGuess" placeholder="Escribe aquí..." 
+               style="width:90%; font-family:'Press Start 2P'; font-size:0.35rem; margin-bottom:8px; padding:4px;">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+            <button onclick="verifyGuess()" style="background:var(--color-verde); font-family:'Press Start 2P'; font-size:0.3rem; padding:8px;">LISTO</button>
+            <button onclick="revealNextHint()" id="hintBtn" style="background:var(--color-amarillo); font-family:'Press Start 2P'; font-size:0.3rem; padding:8px;">MÁS PISTAS</button>
+        </div>
+        <button onclick="updateSelection()" style="background:var(--color-rojo); width:100%; margin-top:5px; font-family:'Press Start 2P'; font-size:0.3rem; padding:4px;">SALIR</button>
+    `;
+}
 // 1. ESTADO GLOBAL
 let content = {}; 
 let modes = [];
@@ -176,16 +233,15 @@ async function loadDataFromSheets() {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-            const tituloA2    = clean(config[0]); // A2: Título de Inicio
-            const fontB2      = clean(config[1]) || "'Press Start 2P'"; // B2
-            const colorC2     = clean(config[2]); // C2: Color Título
-            const colorD2     = clean(config[3]); // D2: Fondo General
-            const colorE2     = clean(config[4]); // E2: Color Fuente Casetes
-            const assetF2     = clean(config[5]); // F2: LINK DE IMAGEN O COLOR
-            const colorG2     = clean(config[6]); // G2: Color Botón Dinámicas
-            const colorH2     = clean(config[7]); // H2: Fondo Menú Dinámicas
+            const tituloA2    = clean(config[0]); 
+            const fontB2      = clean(config[1]) || "'Press Start 2P'"; 
+            const colorC2     = clean(config[2]); 
+            const colorD2     = clean(config[3]); 
+            const colorE2     = clean(config[4]); 
+            const assetF2     = clean(config[5]); 
+            const colorG2     = clean(config[6]); 
+            const colorH2     = clean(config[7]); 
 
-            // Aplicar Título Principal desde A2
             const titleEl = document.querySelector('.retro-title');
             if(titleEl) {
                 titleEl.innerHTML = tituloA2.replace(/\\n/g, '<br>');
@@ -193,13 +249,11 @@ async function loadDataFromSheets() {
                 titleEl.style.fontFamily = fontB2;
             }
 
-            // Estilos de Pantalla y Cuerpo
             document.body.style.backgroundColor = colorD2;
             document.body.style.fontFamily = fontB2;
             const welcome = document.getElementById('welcome-screen');
             if(welcome) welcome.style.backgroundColor = colorD2;
 
-            // Guardamos el tema para los casetes
             window.activeTheme = { 
                 caseteVisual: assetF2, 
                 caseteTxt: colorE2,
@@ -208,37 +262,54 @@ async function loadDataFromSheets() {
             };
         }
 
-       
+        // --- PROCESAMIENTO DE CONTENIDO Y DINÁMICAS (Fila 3 en adelante) ---
         content = {}; 
+        triviaPool = []; // Reiniciamos el pool de trivia
         let lastCat = "";
         
-        // Empezamos a leer datos desde la fila 3 (índice 2) 
-        // o fila 4 (índice 3) si tienes encabezados extra. 
-        // Usaremos slice(2) para saltar Fila 1 (Encabezados) y Fila 2 (Config).
-        rows.slice(2).forEach(row => {
+        // Obtenemos las filas de datos
+        const dataRows = rows.slice(2);
+
+        dataRows.forEach((row, index) => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length >= 2) {
                 const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
                 
-                let cat = cleanV(cols[0]); // Columna A
-                let title = cleanV(cols[1]); // Columna B
+                let cat = cleanV(cols[0]); 
+                let title = cleanV(cols[1]); 
 
-                // Si la fila es un encabezado repetido como "Título" o "Categoría", la saltamos
                 if (title.toLowerCase() === "título" || cat.toLowerCase() === "categoria") return;
 
-                // Lógica de "Arrastre" para celdas combinadas en A
                 if (cat === "" && lastCat !== "") cat = lastCat;
                 else if (cat !== "") lastCat = cat;
 
+                // 1. CARGA DE CASETES (Columnas A a J)
                 if (cat && title) {
                     if (!content[cat]) content[cat] = [];
-                    // Busca esta parte dentro de loadDataFromSheets y verifica que tenga it y pt:
-content[cat].push({
-    t: title,
-    es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
-    fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
-    it: cleanV(cols[8]), pt: cleanV(cols[9]) // <-- ESTAS DOS LÍNEAS SON VITALES
-});
+                    content[cat].push({
+                        t: title,
+                        es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
+                        fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
+                        it: cleanV(cols[8]), pt: cleanV(cols[9])
+                    });
+                }
+
+                // 2. CARGA DE TRIVIA (Columnas L=11 y O=14)
+                // Detectamos el inicio de un bloque cada 5 filas
+                if (index % 5 === 0) {
+                    const respuesta = cleanV(cols[14]); // Columna O
+                    if (respuesta) {
+                        triviaPool.push({
+                            respuesta: respuesta,
+                            pistas: [cleanV(cols[11])] // Primera pista Columna L
+                        });
+                    }
+                } else {
+                    // Añadimos las pistas 2, 3, 4 y 5 al último personaje creado
+                    const pistaExtra = cleanV(cols[11]);
+                    if (pistaExtra && triviaPool.length > 0) {
+                        triviaPool[triviaPool.length - 1].pistas.push(pistaExtra);
+                    }
                 }
             }
         });
