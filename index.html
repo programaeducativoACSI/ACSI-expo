@@ -263,28 +263,25 @@ async function loadDataFromSheets() {
         }
 
         // --- PROCESAMIENTO DE CONTENIDO Y DINÁMICAS (Fila 3 en adelante) ---
+      // --- PROCESAMIENTO DE CONTENIDO Y DINÁMICAS ---
         content = {}; 
-        triviaPool = []; // Reiniciamos el pool de trivia
+        triviaPool = []; 
         let lastCat = "";
-        
-        // Obtenemos las filas de datos
-        const dataRows = rows.slice(2);
+        let currentEntry = null; // Para rastrear el personaje actual de trivia
 
-        dataRows.forEach((row, index) => {
+        rows.slice(2).forEach((row) => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length >= 2) {
                 const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
                 
+                // 1. LÓGICA DE CASETES (A-J)
                 let cat = cleanV(cols[0]); 
                 let title = cleanV(cols[1]); 
 
-                if (title.toLowerCase() === "título" || cat.toLowerCase() === "categoria") return;
+                if (title && title.toLowerCase() !== "título" && cat.toLowerCase() !== "categoria") {
+                    if (cat === "" && lastCat !== "") cat = lastCat;
+                    else if (cat !== "") lastCat = cat;
 
-                if (cat === "" && lastCat !== "") cat = lastCat;
-                else if (cat !== "") lastCat = cat;
-
-                // 1. CARGA DE CASETES (Columnas A a J)
-                if (cat && title) {
                     if (!content[cat]) content[cat] = [];
                     content[cat].push({
                         t: title,
@@ -294,33 +291,31 @@ async function loadDataFromSheets() {
                     });
                 }
 
-                // 2. CARGA DE TRIVIA (Columnas L=11 y O=14)
-                // Detectamos el inicio de un bloque cada 5 filas
-                if (index % 5 === 0) {
-                    const respuesta = cleanV(cols[14]); // Columna O
-                    if (respuesta) {
-                        triviaPool.push({
-                            respuesta: respuesta,
-                            pistas: [cleanV(cols[11])] // Primera pista Columna L
-                        });
+                // 2. LÓGICA DE TRIVIA (L=11, O=14) - REFORZADA PARA CELDAS COMBINADAS
+                const pistaLocal = cleanV(cols[11]);   // Columna L
+                const respuestaLocal = cleanV(cols[14]); // Columna O
+
+                if (respuestaLocal !== "") {
+                    // Si la respuesta en O es nueva, creamos un nuevo bloque de personaje
+                    if (!currentEntry || currentEntry.respuesta !== respuestaLocal) {
+                        currentEntry = {
+                            respuesta: respuestaLocal,
+                            pistas: []
+                        };
+                        triviaPool.push(currentEntry);
                     }
-                } else {
-                    // Añadimos las pistas 2, 3, 4 y 5 al último personaje creado
-                    const pistaExtra = cleanV(cols[11]);
-                    if (pistaExtra && triviaPool.length > 0) {
-                        triviaPool[triviaPool.length - 1].pistas.push(pistaExtra);
+                    
+                    // Si hay una pista en L y aún no tenemos 5 para este personaje, la agregamos
+                    if (pistaLocal !== "" && currentEntry.pistas.length < 5) {
+                        currentEntry.pistas.push(pistaLocal);
                     }
                 }
             }
         });
 
-        modes = Object.keys(content);
-        if (modes.length > 0 && document.getElementById('welcome-screen').style.display === 'none') {
-            buildCarousel();
-        }
-    } catch (e) { console.error("Error de sincronización con Sheets:", e); }
-}
-
+        // Verificación en consola para que estés seguro
+        console.log("Murales cargados:", Object.keys(content));
+        console.log("Juegos de trivia detectados:", triviaPool.length);
 
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
