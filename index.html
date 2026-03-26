@@ -14,21 +14,13 @@
             --color-madera: #8d6e63;
         }
 
-     body {
-    background-color: var(--color-crema);
-    font-family: 'Press Start 2P', cursive;
-    margin: 0;
-    /* Quitamos el overflow hidden para poder hacer scroll si la pantalla es chica */
-    overflow-y: auto; 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    /* Cambiamos a flex-start para que no se corte por arriba en móviles */
-    justify-content: flex-start; 
-    padding-top: 50px; /* Espacio para que no pegue al techo */
-    min-height: 100vh;
-    width: 100vw;
-}
+        body {
+            background-color: var(--color-crema);
+            font-family: 'Press Start 2P', cursive;
+            margin: 0; overflow: hidden; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; width: 100vw;
+        }
 
         #welcome-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -42,62 +34,36 @@
             text-shadow: 4px 4px 0px var(--color-cafe), 8px 8px 0px var(--color-naranja);
             margin-bottom: 20px; line-height: 1.4;
         }
-/* MUEBLE DE TV: Ajustado padding inferior para dar espacio a los controles */
-.tv-furniture {
-    position: relative;
-    z-index: 10; /* Le damos una jerarquía clara */
-    width: 95vw; 
-    max-width: 460px;
-    background-color: var(--color-madera);
-    border: 10px solid #5d4037; 
-    border-radius: 40px;
-    padding: 30px 10px 15px 10px; 
-    box-shadow: 0 20px 0 #3d2b1f, 0 40px 60px rgba(0,0,0,0.5);
-    display: flex; 
-    flex-direction: column; 
-    align-items: center;
-    margin-bottom: 50px; /* Margen para que no pegue al suelo */
-}
 
-.tv-screen {
-    width: 85%; 
-    height: 210px; 
-    background: #1a1a1a;
-    border: 8px solid #b8860b; 
-    border-radius: 20px;
-    overflow: hidden; 
-    perspective: 1000px;
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    position: relative;
-}
+        /* MUEBLE DE TV: Ajustado padding inferior para dar espacio a los controles */
+        .tv-furniture {
+            position: relative;
+            width: 95vw; max-width: 460px;
+            background-color: var(--color-madera);
+            border: 10px solid #5d4037; border-radius: 40px;
+            padding: 30px 10px 15px 10px; /* Reducimos padding inferior */
+            box-shadow: 0 20px 0 #3d2b1f, 0 30px 50px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center;
+        }
 
-.carousel { 
-    width: 180px; 
-    height: 120px; 
-    position: relative; 
-    transform-style: preserve-3d; 
-    transition: transform 0.8s; 
-}
+        .tv-screen {
+            width: 85%; height: 210px; background: #1a1a1a;
+            border: 8px solid #b8860b; border-radius: 20px;
+            overflow: hidden; perspective: 1000px;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
 
-.cassette-card { 
-    position: absolute; 
-    width: 120px; 
-    height: 80px; 
-    background: var(--color-naranja); 
-    border: 2px solid white;
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    backface-visibility: hidden; 
-    cursor: pointer;
-}
-
-.cassette-card.active { 
-    border: 4px solid var(--color-oro); 
-    box-shadow: 0 0 15px var(--color-oro); 
-}
+        .carousel { width: 180px; height: 120px; position: relative; transform-style: preserve-3d; transition: transform 0.8s; }
+        
+        .cassette-card { 
+            position: absolute; width: 120px; height: 80px; 
+            background: var(--color-naranja); border: 2px solid white;
+            display: flex; align-items: center; justify-content: center;
+            backface-visibility: hidden; cursor: pointer;
+        }
+        
+        .cassette-card.active { border: 4px solid var(--color-oro); box-shadow: 0 0 15px var(--color-oro); }
 
         /* PANEL DE CONTROLES: Compactado y metido dentro del mueble */
         .controls-panel { 
