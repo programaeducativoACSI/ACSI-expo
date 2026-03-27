@@ -104,11 +104,16 @@
 <body>
 
 <div id="welcome-screen">
-    <h1 class="retro-title">OSAKA 1969<br>VISION PRO</h1>
+    <h1 class="retro-title">Colegio de San Ildefonso</h1>
     <button class="btn-nav" style="background:var(--color-verde); padding:20px;" onclick="initExperience()">COMENZAR</button>
 </div>
 
-<button class="btn-top-left" onclick="startTrivia()">DINÁMICAS</button>
+<a href="https://programaeducativoacsi.github.io/actividades-ACSIP/" 
+   class="btn-top-left" 
+   style="text-decoration: none; display: inline-block; text-align: center;"
+   onclick="event.preventDefault(); window.location.replace(this.href);">
+   DINÁMICAS
+</a>
 
 <div class="tv-furniture">
     <div class="tv-screen">
