@@ -150,53 +150,129 @@
 </div>
 
 <script>
-// --- VARIABLES GLOBALES DE ESTADO ---
+  function startTrivia() {
+    console.log("Intentando iniciar trivia. Pool actual:", triviaPool);
+    
+    if (!triviaPool || triviaPool.length === 0) {
+        return alert("No hay trivias cargadas en el Excel.");
+    }
+
+    // Elegimos uno de los personajes aleatoriamente
+    currentTriviaItem = triviaPool[Math.floor(Math.random() * triviaPool.length)];
+    currentHintIdx = 0; 
+
+    const panel = document.getElementById('infoPanel');
+    if (panel) {
+        panel.style.display = "block";
+        // Asegúrate de que el panel no esté oculto por el carrusel
+        panel.style.zIndex = "1000"; 
+        renderTriviaScreen();
+    } else {
+        console.error("No se encontró el elemento infoPanel");
+    }
+}
+function revealNextHint() {
+    if (currentHintIdx < 4) {
+        currentHintIdx++;
+        const hintBox = document.getElementById('hintBox');
+        const p = document.createElement('div');
+        p.style.cssText = "color:#0f0; font-size:0.35rem; margin-top:4px; border-top:1px solid #222; padding-top:4px;";
+        p.innerText = `Pista ${currentHintIdx + 1}: ${currentTriviaItem.pistas[currentHintIdx]}`;
+        hintBox.appendChild(p);
+
+        if (currentHintIdx === 4) {
+            document.getElementById('hintBtn').style.opacity = "0.5";
+            document.getElementById('hintBtn').disabled = true;
+        }
+    }
+}
+
+function verifyGuess() {
+    const guess = document.getElementById('userGuess').value.trim().toLowerCase();
+    const correct = currentTriviaItem.respuesta.toLowerCase();
+
+    if (guess === correct) {
+        alert("¡EXCELENTE! HAS ADIVINADO.");
+        updateSelection(); // Regresa al estado normal de la pantalla
+    } else {
+        alert("INCORRECTO. ¡USA OTRA PISTA!");
+    }
+}
+function renderTriviaScreen() {
+    const panel = document.getElementById('infoPanel');
+    panel.innerHTML = `
+        <div style="color:var(--color-oro); font-size:0.4rem; margin-bottom:8px;">¿QUIÉN ES?</div>
+        <div id="hintBox" style="background:#111; padding:8px; border:1px solid #333; min-height:40px; margin-bottom:10px;">
+            <div style="color:#0f0; font-size:0.35rem;">Pista 1: ${currentTriviaItem.pistas[0]}</div>
+        </div>
+        
+        <input type="text" id="userGuess" placeholder="Escribe aquí..." 
+               style="width:90%; font-family:'Press Start 2P'; font-size:0.35rem; margin-bottom:8px; padding:4px;">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+            <button onclick="verifyGuess()" style="background:var(--color-verde); font-family:'Press Start 2P'; font-size:0.3rem; padding:8px;">LISTO</button>
+            <button onclick="revealNextHint()" id="hintBtn" style="background:var(--color-amarillo); font-family:'Press Start 2P'; font-size:0.3rem; padding:8px;">MÁS PISTAS</button>
+        </div>
+        <button onclick="updateSelection()" style="background:var(--color-rojo); width:100%; margin-top:5px; font-family:'Press Start 2P'; font-size:0.3rem; padding:4px;">SALIR</button>
+    `;
+}
+
 let content = {}; 
 let modes = [];
-let triviaPool = []; 
-let currentTriviaItem = null;
-let currentHintIdx = 0;
 let currentModeIdx = 0;
 let currentIndex = 0;
-
-// Configuración de Idiomas (Sincronizada: 9 opciones)
-const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX', 'it-IT', 'pt-BR', 'ja-JP'];
-const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT', 'JP'];
-let langIdx = 0;
 let currentLang = 'es-MX';
+const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX', 'it-IT', 'pt-BR'];
+const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT'];
+let langIdx = 0;
 
-// --- 1. CARGA DE DATOS DESDE GOOGLE SHEETS ---
+
+window.initExperience = function() {
+    const welcome = document.getElementById('welcome-screen');
+    if (welcome) welcome.style.display = 'none';
+    if (modes.length > 0) buildCarousel();
+};
+
+
 async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     
     try {
-        const response = await fetch(url + '?cache=' + Date.now());
+        const response = await fetch(url);
         const data = await response.text();
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
-        const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-        // Configuración de Estilo (Fila 2 - Índice 1)
+        
         if (rows[1]) {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+
             const tituloA2 = clean(config[0]);
+            const fontB2 = clean(config[1]) || "'Press Start 2P'";
             const colorC2 = clean(config[2]);
             const colorD2 = clean(config[3]);
+            const assetF2 = clean(config[5]);
 
             const titleEl = document.querySelector('.retro-title');
             if(titleEl) {
                 titleEl.innerHTML = tituloA2.replace(/\\n/g, '<br>');
                 titleEl.style.color = colorC2;
+                titleEl.style.fontFamily = fontB2;
             }
+
             document.body.style.backgroundColor = colorD2;
+            const welcome = document.getElementById('welcome-screen');
+            if(welcome) welcome.style.backgroundColor = colorD2;
 
             window.activeTheme = { 
-                caseteVisual: clean(config[5]), 
-                btnDin: clean(config[6]), 
+                caseteVisual: assetF2, 
+                caseteTxt: clean(config[4]),
+                btnDin: clean(config[6]),
                 bgDin: clean(config[7]) 
             };
         }
 
-        // Procesar Murales (Fila 3 en adelante) y Columnas de Idiomas (A-K)
+        
         content = {}; 
         triviaPool = []; 
         let lastCat = "";
@@ -204,10 +280,13 @@ async function loadDataFromSheets() {
 
         rows.slice(2).forEach((row) => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if (cols.length < 2) return;
+            if (cols.length < 2) return; // Saltamos filas vacías o malformadas
 
-            let cat = clean(cols[0]); 
-            let title = clean(cols[1]); 
+            const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+            
+           
+            let cat = cleanV(cols[0]); 
+            let title = cleanV(cols[1]); 
 
             if (title && title.toLowerCase() !== "título") {
                 if (cat === "" && lastCat !== "") cat = lastCat;
@@ -216,37 +295,43 @@ async function loadDataFromSheets() {
                 if (!content[cat]) content[cat] = [];
                 content[cat].push({
                     t: title,
-                    es: clean(cols[2]), en: clean(cols[3]), zh: clean(cols[4]),
-                    fr: clean(cols[5]), de: clean(cols[6]), nah: clean(cols[7]),
-                    it: clean(cols[8]), pt: clean(cols[9]), jp: clean(cols[10]) // Columna K
+                    es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
+                    fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
+                    it: cleanV(cols[8]), pt: cleanV(cols[9])
                 });
             }
 
-            // Procesar Trivias (Pistas Col L=11, Respuesta Col O=14)
-            const pistaLocal = clean(cols[11]);
-            const respuestaLocal = clean(cols[14]);
+            // --- CARGA DE TRIVIA (L=11, O=14) ---
+            // Usamos una lógica más flexible que el % 5 para evitar que el script se trabe
+            const pistaLocal = cleanV(cols[11]);
+            const respuestaLocal = cleanV(cols[14]);
 
-            if (respuestaLocal) {
+            if (respuestaLocal !== "") {
+                // Si la respuesta es distinta a la anterior, creamos un nuevo bloque
                 if (!currentTriviaEntry || currentTriviaEntry.respuesta !== respuestaLocal) {
                     currentTriviaEntry = { respuesta: respuestaLocal, pistas: [] };
                     triviaPool.push(currentTriviaEntry);
                 }
-                if (pistaLocal && currentTriviaEntry.pistas.length < 5) {
+                // Añadimos pista si hay espacio (máximo 5)
+                if (pistaLocal !== "" && currentTriviaEntry.pistas.length < 5) {
                     currentTriviaEntry.pistas.push(pistaLocal);
                 }
             }
         });
 
         modes = Object.keys(content);
-        if (modes.length > 0) buildCarousel();
-        console.log("Carga exitosa. Idiomas listos: 9");
+        if (modes.length > 0 && document.getElementById('welcome-screen').style.display === 'none') {
+            buildCarousel();
+        }
+        
+        console.log("Carga completa. Murales:", modes.length, "Trivias:", triviaPool.length);
 
     } catch (e) { 
-        console.error("Error cargando base de datos:", e); 
+        console.error("Error en el script:", e); 
     }
 }
 
-// --- 2. LÓGICA DEL CARRUSEL ---
+
 function buildCarousel() {
     const container = document.getElementById('carouselContainer');
     if(!container) return;
@@ -260,21 +345,39 @@ function buildCarousel() {
     items.forEach((item, i) => {
         const card = document.createElement('div');
         card.className = 'cassette-card';
-        const visual = window.activeTheme.caseteVisual;
         
-        if (visual.includes('http')) {
+        // Jala la imagen desde F2 (Celda 6 de la fila 2)
+        const visual = window.activeTheme.caseteVisual;
+        if (visual.includes('http') || visual.includes('.')) {
             card.style.backgroundImage = `url(${visual})`;
             card.style.backgroundSize = '100% 100%';
         } else {
             card.style.backgroundColor = visual || '#D6742B';
         }
         
+        // NOTA: Ya no agregamos innerHTML con el nombre para que el casete esté limpio
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
         card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
         container.appendChild(card);
     });
     
+    // Actualizamos el modo en grande
     document.getElementById('mode-label').innerText = `MODO: ${modes[currentModeIdx].toUpperCase()}`;
+    updateSelection();
+}
+// 5. NAVEGACIÓN
+function nextMode() {
+    window.speechSynthesis.cancel();
+    currentModeIdx = (currentModeIdx + 1) % modes.length;
+    currentIndex = 0;
+    document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
+    buildCarousel();
+}
+
+function rotateCarousel(dir) {
+    window.speechSynthesis.cancel();
+    const items = content[modes[currentModeIdx]];
+    currentIndex = (currentIndex + dir + items.length) % items.length;
     updateSelection();
 }
 
@@ -287,144 +390,99 @@ function updateSelection() {
     document.getElementById('currentTitle').innerText = content[modes[currentModeIdx]][currentIndex].t;
 }
 
-// --- 3. NAVEGACIÓN Y CONTROLES ---
-function nextMode() {
-    stopAudioForce();
-    currentModeIdx = (currentModeIdx + 1) % modes.length;
-    currentIndex = 0;
-    const knob = document.getElementById('mode-knob');
-    if(knob) knob.style.transform = `rotate(${currentModeIdx * 90}deg)`;
-    buildCarousel();
-}
-
-function rotateCarousel(dir) {
-    stopAudioForce();
-    const items = content[modes[currentModeIdx]];
-    currentIndex = (currentIndex + dir + items.length) % items.length;
-    updateSelection();
-}
-
-// --- 4. IDIOMAS Y SINTETIZADOR DE VOZ ---
+// 6. AUDIO (Columnas C a H) - Actualizado para ser silencioso
+// 6. AUDIO (Columnas C a H) - Actualizado para anunciar el idioma
 function toggleLanguage() {
+    // 1. Detenemos cualquier audio previo
     stopAudioForce(); 
-
+    
+    // 2. Cambiamos el idioma en la lista (Ahora incluye IT y PT)
+    // Asegúrate de que tu variable langOptions tenga 8 elementos al inicio del script
     langIdx = (langIdx + 1) % langOptions.length;
     currentLang = langOptions[langIdx];
     
-    // Girar perilla (360 / 9 = 40 grados por posición)
+    // 3. Giramos la perilla visualmente (360 grados / 8 idiomas = 45 grados por clic)
     const knob = document.getElementById('lang-knob');
-    if (knob) knob.style.transform = `rotate(${langIdx * 40}deg)`;
+    if (knob) {
+        knob.style.transform = `rotate(${langIdx * 45}deg)`;
+    }
     
-    // Cambiar etiqueta de idioma en pantalla
+    // 4. Actualizamos el texto del indicador visual
+    const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT'];
     const langLabel = document.getElementById('lang-label');
-    if (langLabel) langLabel.innerText = langNames[langIdx];
+    if (langLabel) {
+        langLabel.innerText = langNames[langIdx];
+    }
 
-    const voiceNames = {
-        'es-MX': 'Español', 'en-US': 'English', 'zh-CN': 'Mandarín',
-        'fr-FR': 'Français', 'de-DE': 'Deutsch', 'nah-MX': 'Náhuatl',
-        'it-IT': 'Italiano', 'pt-BR': 'Português', 'ja-JP': 'Japonés'
+    // 5. La voz anuncia el idioma seleccionado (Incluyendo los nuevos)
+    const voiceAnnouncements = {
+        'es-MX': 'Español',
+        'en-US': 'English',
+        'zh-CN': 'Mandarín',
+        'fr-FR': 'Français',
+        'de-DE': 'Deutsch',
+        'nah-MX': 'Náhuatl',
+        'it-IT': 'Italiano',
+        'pt-BR': 'Português'
     };
 
-    // Anuncio del idioma seleccionado
-    const utterance = new SpeechSynthesisUtterance(voiceNames[currentLang]);
-    utterance.lang = (currentLang === 'nah-MX') ? 'es-MX' : currentLang;
-    window.speechSynthesis.speak(utterance);
+    const announcement = new SpeechSynthesisUtterance(voiceAnnouncements[currentLang]);
     
+    // Configuramos la voz correcta para el anuncio
+    if (currentLang === 'nah-MX') {
+        announcement.lang = 'es-MX'; // Náhuatl leído con voz en español
+    } else {
+        announcement.lang = currentLang;
+    }
+    
+    announcement.pitch = 1.2; // Tono más agudo para el "asistente"
+    announcement.rate = 1;
+
+    window.speechSynthesis.speak(announcement);
+    
+    // 6. Actualizamos el texto del panel negro sin reproducir el contenido largo
     updateSelection();
 }
-
 function playCurrent() {
-    stopAudioForce();
+    stopAudioForce(); // Detenemos cualquier anuncio previo
+    
     const item = content[modes[currentModeIdx]][currentIndex];
     
+    // 1. ACTUALIZACIÓN DEL MAPA DE COLUMNAS
+    // Asegúrate de que coincida con el orden de tus columnas en Sheets
     const langMap = { 
-        'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 
-        'de-DE': 'de', 'nah-MX': 'nah', 'it-IT': 'it', 'pt-BR': 'pt', 'ja-JP': 'jp' 
+        'es-MX': 'es', 
+        'en-US': 'en', 
+        'zh-CN': 'zh', 
+        'fr-FR': 'fr', 
+        'de-DE': 'de', 
+        'nah-MX': 'nah',
+        'it-IT': 'it', // Esto buscará en la columna de Italiano
+        'pt-BR': 'pt'  // Esto buscará en la columna de Portugués
     };
     
-    const textToSpeak = item[langMap[currentLang]] || item.es;
-    const msg = new SpeechSynthesisUtterance(textToSpeak);
+    // Obtenemos el texto. Si no existe en el idioma, usa español por defecto
+    const text = item[langMap[currentLang]] || item.es;
     
-    // Configuración específica por idioma
+    const msg = new SpeechSynthesisUtterance(text);
+    
+    // 2. ASIGNACIÓN DEL ACENTO CORRECTO
+    // Si es Náhuatl, usamos voz de México. Si no, usamos la del idioma seleccionado.
     if (currentLang === 'nah-MX') {
         msg.lang = 'es-MX';
         msg.rate = 0.8;
     } else {
-        msg.lang = currentLang;
+        msg.lang = currentLang; // Aquí es donde se activa el acento IT o PT
     }
     
     window.speechSynthesis.speak(msg);
 }
-
 function stopAudioForce() {
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-}
-
-// --- 5. LÓGICA DE TRIVIA (DENTRO DE LA TV) ---
-function startTrivia() {
-    if (!triviaPool || triviaPool.length === 0) return alert("No hay trivias cargadas.");
-    
-    currentTriviaItem = triviaPool[Math.floor(Math.random() * triviaPool.length)];
-    currentHintIdx = 0; 
-
-    const panel = document.getElementById('infoPanel');
-    if (panel) {
-        panel.style.display = "block";
-        panel.style.zIndex = "1000"; 
-        renderTriviaScreen();
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
     }
 }
 
-function renderTriviaScreen() {
-    const panel = document.getElementById('infoPanel');
-    panel.innerHTML = `
-        <div style="color:var(--color-oro); font-size:0.4rem; margin-bottom:8px; text-align:center;">¿QUIÉN ES?</div>
-        <div id="hintBox" style="background:#000; padding:8px; border:1px solid #333; min-height:60px; margin-bottom:10px; overflow-y:auto;">
-            <div style="color:#0f0; font-size:0.35rem;">Pista 1: ${currentTriviaItem.pistas[0]}</div>
-        </div>
-        <input type="text" id="userGuess" placeholder="Respuesta..." style="width:90%; font-family:'Press Start 2P'; font-size:0.3rem; margin-bottom:10px; padding:5px; background:#222; color:#fff; border:1px solid var(--color-oro);">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-            <button onclick="verifyGuess()" style="background:var(--color-verde); font-family:'Press Start 2P'; font-size:0.25rem; padding:8px; cursor:pointer; color:#000;">LISTO</button>
-            <button onclick="revealNextHint()" id="hintBtn" style="background:var(--color-amarillo); font-family:'Press Start 2P'; font-size:0.25rem; padding:8px; cursor:pointer; color:#000;">+ PISTA</button>
-        </div>
-        <button onclick="closeTrivia()" style="background:var(--color-rojo); width:100%; margin-top:10px; font-family:'Press Start 2P'; font-size:0.3rem; padding:5px; color:#fff; cursor:pointer;">CERRAR</button>
-    `;
-}
-
-function revealNextHint() {
-    if (currentHintIdx < currentTriviaItem.pistas.length - 1) {
-        currentHintIdx++;
-        const hintBox = document.getElementById('hintBox');
-        const p = document.createElement('div');
-        p.style.cssText = "color:#0f0; font-size:0.35rem; margin-top:5px; border-top:1px solid #222; padding-top:5px;";
-        p.innerText = `Pista ${currentHintIdx + 1}: ${currentTriviaItem.pistas[currentHintIdx]}`;
-        hintBox.appendChild(p);
-
-        if (currentHintIdx === currentTriviaItem.pistas.length - 1) {
-            document.getElementById('hintBtn').style.opacity = "0.5";
-            document.getElementById('hintBtn').disabled = true;
-        }
-    }
-}
-
-function verifyGuess() {
-    const guess = document.getElementById('userGuess').value.trim().toLowerCase();
-    const correct = currentTriviaItem.respuesta.toLowerCase();
-
-    if (guess === correct) {
-        alert("¡EXCELENTE! HAS ADIVINADO.");
-        closeTrivia();
-    } else {
-        alert("INCORRECTO. ¡INTENTA OTRA PISTA!");
-    }
-}
-
-function closeTrivia() {
-    const panel = document.getElementById('infoPanel');
-    if(panel) panel.style.display = "none";
-}
-
-// Inicialización al cargar la página
 document.addEventListener('DOMContentLoaded', loadDataFromSheets);
 </script>
 </body>
