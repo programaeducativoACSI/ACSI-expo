@@ -157,7 +157,7 @@
         return alert("No hay trivias cargadas en el Excel.");
     }
 
-    // Elegimos uno de los personajes aleatoriamente
+    
     currentTriviaItem = triviaPool[Math.floor(Math.random() * triviaPool.length)];
     currentHintIdx = 0; 
 
@@ -297,12 +297,11 @@ async function loadDataFromSheets() {
                     t: title,
                     es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
                     fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
-                    it: cleanV(cols[8]), pt: cleanV(cols[9])
+                    it: cleanV(cols[8]), pt: cleanV(cols[9]), Jp: clean(cols[10])
                 });
             }
 
-            // --- CARGA DE TRIVIA (L=11, O=14) ---
-            // Usamos una lógica más flexible que el % 5 para evitar que el script se trabe
+            
             const pistaLocal = cleanV(cols[11]);
             const respuestaLocal = cleanV(cols[14]);
 
@@ -346,7 +345,7 @@ function buildCarousel() {
         const card = document.createElement('div');
         card.className = 'cassette-card';
         
-        // Jala la imagen desde F2 (Celda 6 de la fila 2)
+        
         const visual = window.activeTheme.caseteVisual;
         if (visual.includes('http') || visual.includes('.')) {
             card.style.backgroundImage = `url(${visual})`;
@@ -355,17 +354,17 @@ function buildCarousel() {
             card.style.backgroundColor = visual || '#D6742B';
         }
         
-        // NOTA: Ya no agregamos innerHTML con el nombre para que el casete esté limpio
+       
         card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
         card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
         container.appendChild(card);
     });
     
-    // Actualizamos el modo en grande
+   
     document.getElementById('mode-label').innerText = `MODO: ${modes[currentModeIdx].toUpperCase()}`;
     updateSelection();
 }
-// 5. NAVEGACIÓN
+
 function nextMode() {
     window.speechSynthesis.cancel();
     currentModeIdx = (currentModeIdx + 1) % modes.length;
@@ -390,32 +389,31 @@ function updateSelection() {
     document.getElementById('currentTitle').innerText = content[modes[currentModeIdx]][currentIndex].t;
 }
 
-// 6. AUDIO (Columnas C a H) - Actualizado para ser silencioso
-// 6. AUDIO (Columnas C a H) - Actualizado para anunciar el idioma
+
 function toggleLanguage() {
     // 1. Detenemos cualquier audio previo
     stopAudioForce(); 
     
-    // 2. Cambiamos el idioma en la lista (Ahora incluye IT y PT)
-    // Asegúrate de que tu variable langOptions tenga 8 elementos al inicio del script
+
     langIdx = (langIdx + 1) % langOptions.length;
     currentLang = langOptions[langIdx];
     
-    // 3. Giramos la perilla visualmente (360 grados / 8 idiomas = 45 grados por clic)
+    
     const knob = document.getElementById('lang-knob');
     if (knob) {
-        knob.style.transform = `rotate(${langIdx * 45}deg)`;
+        knob.style.transform = `rotate(${langIdx * 42.2}deg)`;
     }
     
-    // 4. Actualizamos el texto del indicador visual
-    const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT'];
+    
+    const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT', 'JP'];
     const langLabel = document.getElementById('lang-label');
     if (langLabel) {
         langLabel.innerText = langNames[langIdx];
     }
 
-    // 5. La voz anuncia el idioma seleccionado (Incluyendo los nuevos)
+    
     const voiceAnnouncements = {
+        const voiceAnnouncements = {
         'es-MX': 'Español',
         'en-US': 'English',
         'zh-CN': 'Mandarín',
@@ -423,51 +421,49 @@ function toggleLanguage() {
         'de-DE': 'Deutsch',
         'nah-MX': 'Náhuatl',
         'it-IT': 'Italiano',
-        'pt-BR': 'Português'
+        'pt-BR': 'Português',
+        'ja-JP': 'Japonés'
     };
-
     const announcement = new SpeechSynthesisUtterance(voiceAnnouncements[currentLang]);
     
-    // Configuramos la voz correcta para el anuncio
+   
     if (currentLang === 'nah-MX') {
-        announcement.lang = 'es-MX'; // Náhuatl leído con voz en español
+        announcement.lang = 'es-MX';
     } else {
         announcement.lang = currentLang;
     }
     
-    announcement.pitch = 1.2; // Tono más agudo para el "asistente"
+    announcement.pitch = 1.2; 
     announcement.rate = 1;
 
     window.speechSynthesis.speak(announcement);
     
-    // 6. Actualizamos el texto del panel negro sin reproducir el contenido largo
     updateSelection();
 }
 function playCurrent() {
-    stopAudioForce(); // Detenemos cualquier anuncio previo
+    stopAudioForce(); 
     
     const item = content[modes[currentModeIdx]][currentIndex];
     
-    // 1. ACTUALIZACIÓN DEL MAPA DE COLUMNAS
-    // Asegúrate de que coincida con el orden de tus columnas en Sheets
-    const langMap = { 
+   
+const langMap = { 
         'es-MX': 'es', 
         'en-US': 'en', 
         'zh-CN': 'zh', 
         'fr-FR': 'fr', 
         'de-DE': 'de', 
         'nah-MX': 'nah',
-        'it-IT': 'it', // Esto buscará en la columna de Italiano
-        'pt-BR': 'pt'  // Esto buscará en la columna de Portugués
+        'it-IT': 'it', 
+        'pt-BR': 'pt',
+        'ja-JP': 'jp' 
     };
     
-    // Obtenemos el texto. Si no existe en el idioma, usa español por defecto
+   
     const text = item[langMap[currentLang]] || item.es;
     
     const msg = new SpeechSynthesisUtterance(text);
     
-    // 2. ASIGNACIÓN DEL ACENTO CORRECTO
-    // Si es Náhuatl, usamos voz de México. Si no, usamos la del idioma seleccionado.
+    
     if (currentLang === 'nah-MX') {
         msg.lang = 'es-MX';
         msg.rate = 0.8;
