@@ -168,7 +168,7 @@ async function loadDataFromSheets() {
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
         const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-        // --- 1. PERSONALIZACIÓN VISUAL (FILA 2 - Índice 1) ---
+        
         if (rows[1]) {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             
@@ -190,19 +190,18 @@ async function loadDataFromSheets() {
                 titleEl.style.textShadow = `4px 4px 0px ${shadowColor}`;
             }
 
-            // Aplicar Fondo y Colores de Interfaz
+           
             document.body.style.backgroundColor = bgColor;
             document.getElementById('welcome-screen').style.backgroundColor = bgColor;
             document.getElementById('currentTitle').style.color = titleColor;
             
-            // Botón Dinámicas
             const btnDin = document.querySelector('.btn-top-left');
             if (btnDin) btnDin.style.backgroundColor = btnColor;
 
             window.activeTheme = { caseteVisual: caseteImg };
         }
 
-        // --- 2. CARGA DE CONTENIDO (DESDE FILA 4 - Índice 3) ---
+        
         content = {}; 
         let lastCategory = "";
 
