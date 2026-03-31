@@ -168,24 +168,51 @@ async function loadDataFromSheets() {
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
         const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
-        // Configuración (Fila 2)
+        // --- 1. PERSONALIZACIÓN VISUAL (FILA 2 - Índice 1) ---
         if (rows[1]) {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            window.activeTheme = { caseteVisual: clean(config[5]) };
+            
+            const titleText = clean(config[0]);    // A2: Título
+            const fontStyle = clean(config[1]);    // B2: Tipografía
+            const titleColor = clean(config[2]);   // C2: Color Título
+            const bgColor = clean(config[3]);      // D2: Color Fondo
+            const fontColor = clean(config[4]);    // E2: Color Fuente (Secundarios)
+            const caseteImg = clean(config[5]);    // F2: Casete
+            const btnColor = clean(config[6]);     // G2: Botón Dinámicas
+            const shadowColor = clean(config[7]);  // H2: Sombra Título
+
+            // Aplicar Título y Sombras
+            const titleEl = document.querySelector('.retro-title');
+            if (titleEl) {
+                titleEl.innerHTML = titleText.replace(/\\n/g, '<br>');
+                titleEl.style.color = titleColor;
+                titleEl.style.fontFamily = fontStyle || "'Press Start 2P'";
+                titleEl.style.textShadow = `4px 4px 0px ${shadowColor}`;
+            }
+
+            // Aplicar Fondo y Colores de Interfaz
+            document.body.style.backgroundColor = bgColor;
+            document.getElementById('welcome-screen').style.backgroundColor = bgColor;
+            document.getElementById('currentTitle').style.color = titleColor;
+            
+            // Botón Dinámicas
+            const btnDin = document.querySelector('.btn-top-left');
+            if (btnDin) btnDin.style.backgroundColor = btnColor;
+
+            window.activeTheme = { caseteVisual: caseteImg };
         }
 
+        // --- 2. CARGA DE CONTENIDO (DESDE FILA 4 - Índice 3) ---
         content = {}; 
         let lastCategory = "";
 
-        // Procesar datos (Fila 3 en adelante)
-        rows.slice(2).forEach((row) => {
+        rows.slice(3).forEach((row) => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length < 2) return;
 
             let cat = clean(cols[0]);
             let title = clean(cols[1]);
 
-            // Lógica de herencia de categoría (si la celda A está vacía, usa la anterior)
             if (cat !== "") {
                 lastCategory = cat;
             } else {
@@ -208,7 +235,7 @@ async function loadDataFromSheets() {
             updateModeDisplay();
             if (document.getElementById('welcome-screen').style.display === 'none') buildCarousel();
         }
-    } catch (e) { console.error("Error cargando Sheets:", e); }
+    } catch (e) { console.error("Error cargando configuración:", e); }
 }
 
 function buildCarousel() {
