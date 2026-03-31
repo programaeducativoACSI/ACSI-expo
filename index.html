@@ -2,488 +2,324 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Exposición San Ildefonso</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-<style>
-        :root {
-            --color-verde: #80B0A4; --color-rojo: #D04F2C;
-            --color-amarillo: #D9AC36; --color-naranja: #D6742B;
-            --color-cafe: #431E15; --color-crema: #fffaf0;
-            --color-azul: #4A90E2; --color-oro: #FFD700;
-            --color-madera: #8d6e63;
-        }
-
-        body {
-            background-color: var(--color-crema);
-            font-family: 'Press Start 2P', cursive;
-            margin: 0; overflow: hidden; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; width: 100vw;
-        }
-
-        #welcome-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--color-crema);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9000; text-align: center; padding: 20px;
-        }
-
-        .retro-title {
-            font-size: 1.2rem; color: var(--color-rojo);
-            text-shadow: 4px 4px 0px var(--color-cafe), 8px 8px 0px var(--color-naranja);
-            margin-bottom: 20px; line-height: 1.4;
-        }
-
-        
-        .tv-furniture {
-            position: relative;
-            width: 95vw; max-width: 460px;
-            background-color: var(--color-madera);
-            border: 10px solid #5d4037; border-radius: 40px;
-            padding: 30px 10px 15px 10px; 
-            box-shadow: 0 20px 0 #3d2b1f, 0 30px 50px rgba(0,0,0,0.5);
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dinámicas - Museo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; padding: 20px; min-height: 100vh;
             display: flex; flex-direction: column; align-items: center;
+            font-family: 'Press Start 2P', cursive; transition: background 0.5s;
         }
-
-        .tv-screen {
-            width: 85%; height: 210px; background: #1a1a1a;
-            border: 8px solid #b8860b; border-radius: 20px;
-            overflow: hidden; perspective: 1000px;
-            display: flex; align-items: center; justify-content: center;
-            position: relative;
+        #main-menu { text-align: center; margin-top: 40px; }
+        .game-section { display: none; width: 95%; max-width: 500px; text-align: center; margin-top: 20px; }
+        
+        .btn-game { 
+            display: block; width: 280px; margin: 15px auto; padding: 15px;
+            border: none; cursor: pointer; font-family: 'Press Start 2P';
+            font-size: 0.5rem; box-shadow: 4px 4px 0px #000;
         }
+        .back-link { position: fixed; top: 20px; left: 20px; text-decoration: none; font-size: 0.6rem; padding: 15px; border-radius: 2px; z-index: 100;}
 
-        .carousel { width: 180px; height: 120px; position: relative; transform-style: preserve-3d; transition: transform 0.8s; }
+        /* CAMBIO 2: Color de letra de la selección de MODO a BLANCO */
+        #mode-label { color: #ffffff; font-size: 0.5rem; margin-top: 10px; display: block; }
+
+        .panel { border: 6px solid #000; padding: 20px; background: rgba(0,0,0,0.1); border-radius: 10px; }
+        #hintBox { font-size: 0.4rem; text-align: left; line-height: 1.8; margin-bottom: 15px; }
+        input { width: 80%; padding: 10px; font-family: 'Press Start 2P'; font-size: 0.5rem; margin-bottom: 10px; }
         
-        .cassette-card { 
-            position: absolute; width: 120px; height: 80px; 
-            background: var(--color-naranja); border: 2px solid white;
-            display: flex; align-items: center; justify-content: center;
-            backface-visibility: hidden; cursor: pointer;
+        #memory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 10px; }
+        .card { height: 120px; width: 100%; background: #333; cursor: pointer; display: flex; align-items: center; justify-content: center; border: 3px solid #fff; border-radius: 10px; overflow: hidden; position: relative; box-shadow: 4px 4px 0px rgba(0,0,0,0.5); }
+        .card img { width: 100%; height: 100%; object-fit: contain; background: #000; display: none; }
+        .card span { display: none; font-size: 0.5rem; padding: 10px; text-align: center; line-height: 1.2; word-break: break-word; }
+        .card.flipped img, .card.flipped span { display: block; }
+
+        #puzzle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; width: 330px; height: 330px; margin: 0 auto; border: 5px solid #000; background-color: #222; }
+        .tile { width: 110px; height: 110px; background-size: 330px 330px; background-repeat: no-repeat; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box; }
+        .tile.empty { background: #eee !important; cursor: default; }
+
+        #victory-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000;
         }
-        
-        .cassette-card.active { border: 4px solid var(--color-oro); box-shadow: 0 0 15px var(--color-oro); }
-
-       
-        .controls-panel { 
-            width: 90%; 
-            display: grid; 
-            grid-template-columns: 1fr 1.5fr 1fr; 
-            align-items: center; 
-            gap: 5px; 
-            color: white; 
-            margin-top: 10px; 
-            padding: 5px 10px;
-            background: rgba(0,0,0,0.1); 
-            border-radius: 20px;
+        .papiro {
+            background: #f4e4bc;
+            background-image: url('https://www.transparenttextures.com/patterns/beige-paper.png');
+            padding: 40px; border: 2px solid #d4a373; border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; max-width: 80%;
+            border: 10px solid #8b5a2b; border-style: double;
         }
-
-        .knob-container { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .knob { width: 35px; height: 35px; background: #222; border: 3px solid var(--color-oro); border-radius: 50%; cursor: pointer; transition: transform 0.5s; position: relative; }
-        .knob::after { content: ''; position: absolute; top: 4px; left: 50%; width: 3px; height: 10px; background: var(--color-oro); transform: translateX(-50%); }
-        
-      
-        .control-label { font-size: 0.25rem; color: var(--color-oro); text-transform: uppercase; }
-        .dynamic-label { font-size: 0.3rem; color: white; margin-top: 2px; }
-
-        .nav-buttons-container { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; margin-bottom: 5px; }
-        .btn-yellow { background: var(--color-amarillo); color: var(--color-cafe); border: none; padding: 6px 4px; font-family: 'Press Start 2P'; font-size: 0.35rem; cursor: pointer; box-shadow: 2px 2px 0px #000; }
-        
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-        .btn-nav { background: var(--color-amarillo); border: none; padding: 6px 4px; font-family: 'Press Start 2P'; font-size: 0.35rem; cursor: pointer; box-shadow: 2px 2px 0px #000; }
-        
-        #infoPanel { 
-            background: #000; color: #0f0; padding: 10px; font-size: 0.35rem; 
-            width: 80%; height: 60px; overflow-y: auto; margin-top: 10px; border: 2px solid #333;
-        }
-
-        .btn-top-left { position: absolute; top: 20px; left: 20px; z-index: 1000; background: var(--color-rojo); color: white; border: 4px solid var(--color-cafe); padding: 15px; font-size: 0.6rem; cursor: pointer; }
+        .papiro h2 { color: #800000; font-size: 0.8rem; margin-bottom: 20px; }
+        .papiro p { color: #333; font-size: 0.5rem; line-height: 1.5; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-<div id="welcome-screen">
-    <h1 class="retro-title">Colegio de San Ildefonso</h1>
-    <button class="btn-nav" style="background:var(--color-verde); padding:20px;" onclick="initExperience()">COMENZAR</button>
-</div>
-
-<a href="https://programaeducativoacsi.github.io/actividades-ACSIP/" 
-   class="btn-top-left" 
-   style="text-decoration: none; display: inline-block; text-align: center;"
-   onclick="event.preventDefault(); window.location.replace(this.href);">
-   DINÁMICAS
-</a>
-
-<div class="tv-furniture">
-    <div class="tv-screen">
-        <div class="carousel" id="carouselContainer"></div>
-    </div>
+    <button id="btn-regresar" class="back-link" onclick="salirAExposicion()">VOLVER</button>
     
-    <div class="display-text-area">
-        <div id="mode-label">CARGANDO...</div>
-        <div id="currentTitle">BIENVENIDO</div>
+    <div id="main-menu">
+        <h1 id="titulo-principal" style="font-size: 0.8rem;">DINÁMICAS MUSEO</h1>
+        <span id="mode-label">MODO: MURALES</span>
+        <button class="btn-game" onclick="runTrivia()">1. ADIVINA</button>
+        <button class="btn-game" onclick="runMemory()">2. MEMORAMA</button>
+        <button class="btn-game" onclick="runPuzzle()">3. PUZZLE</button>
     </div>
 
-    <div class="controls-panel">
-        <div class="knob-container">
-            <div id="mode-knob" class="knob" onclick="nextMode()"></div>
-            <span class="control-label">MODO</span>
-            <div id="mode-label" class="dynamic-label">MURALES</div> </div>
-
-        <div style="display:flex; flex-direction:column; align-items:center;">
-            <div class="nav-buttons-container">
-                <button class="btn-yellow" onclick="rotateCarousel(-1)">RETURN</button>
-                <button class="btn-yellow" onclick="rotateCarousel(1)">NEXT</button>
-            </div>
-            <div class="btn-group">
-                <button class="btn-nav" onclick="playCurrent()">PLAY</button>
-                <button class="btn-nav" style="background:var(--color-azul);" onclick="stopAudioForce()">STOP</button>
-            </div>
+    <div id="view-trivia" class="game-section">
+        <button class="btn-game" onclick="showHome()" style="font-size: 0.3rem; width: auto;">ATRÁS</button>
+        <div class="panel">
+            <div id="hintBox"></div>
+            <input type="text" id="ansInput" placeholder="RESPUESTA...">
+            <button class="btn-game" style="width: 100%;" onclick="checkAns()">VALIDAR</button>
+            <button id="btn-next-hint" class="btn-game" style="width: 100%;" onclick="nextHint()">OTRA PISTA</button>
         </div>
-       <div class="knob-container">
-            <div id="lang-knob" class="knob" onclick="toggleLanguage()"></div>
-            <span class="control-label">LANG</span>
-            <div id="lang-label" class="dynamic-label">ES</div> </div>
     </div>
-</div>
-</div>
+
+    <div id="view-memory" class="game-section">
+        <button class="btn-game" onclick="showHome()" style="font-size: 0.3rem; width: auto;">ATRÁS</button>
+        <div id="memory-grid"></div>
+    </div>
+
+    <div id="view-puzzle" class="game-section">
+        <button class="btn-game" onclick="showHome()" style="font-size: 0.3rem; width: auto;">ATRÁS</button>
+        <div id="puzzle-grid"></div>
+    </div>
+
+    <div id="victory-screen">
+        <div class="papiro">
+            <h2>¡LOGRO CONSEGUIDO!</h2>
+            <p id="victory-msg">Has completado la dinámica correctamente.</p>
+            <button class="btn-game" style="width: 100%;" onclick="showHome()">MENU PRINCIPAL</button>
+        </div>
+    </div>
 
 <script>
-  function startTrivia() {
-    console.log("Intentando iniciar trivia. Pool actual:", triviaPool);
+    const URL_DINAMICAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSTPf6KsrFzsD6zY57ugk3fiqixmZKtIXauOM8x16xQZq-5gY_HzlNmM1EYk9QtnGmaBJQvQf3walml/pub?output=csv';
+
+    let poolTrivia = [], poolMemory = [], poolPuzzle = [];
+    let curObj, curHintIdx = 0;
+    let colorInstrucciones = "#ffffff";
     
-    if (!triviaPool || triviaPool.length === 0) {
-        return alert("No hay trivias cargadas en el Excel.");
-    }
+    // CAMBIO 3: Adición de idiomas (incluyendo JP)
+    const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX', 'it-IT', 'pt-BR', 'ja-JP'];
+    let langIdx = 0;
+    let currentLang = 'es-MX';
 
-    // Elegimos uno de los personajes aleatoriamente
-    currentTriviaItem = triviaPool[Math.floor(Math.random() * triviaPool.length)];
-    currentHintIdx = 0; 
+    // CAMBIO 1: Manejo de categorías (Modos) dinámico
+    let categories = [];
+    let currentCatIdx = 0;
 
-    const panel = document.getElementById('infoPanel');
-    if (panel) {
-        panel.style.display = "block";
-        // Asegúrate de que el panel no esté oculto por el carrusel
-        panel.style.zIndex = "1000"; 
-        renderTriviaScreen();
-    } else {
-        console.error("No se encontró el elemento infoPanel");
-    }
-}
-function revealNextHint() {
-    if (currentHintIdx < 4) {
-        currentHintIdx++;
-        const hintBox = document.getElementById('hintBox');
-        const p = document.createElement('div');
-        p.style.cssText = "color:#0f0; font-size:0.35rem; margin-top:4px; border-top:1px solid #222; padding-top:4px;";
-        p.innerText = `Pista ${currentHintIdx + 1}: ${currentTriviaItem.pistas[currentHintIdx]}`;
-        hintBox.appendChild(p);
-
-        if (currentHintIdx === 4) {
-            document.getElementById('hintBtn').style.opacity = "0.5";
-            document.getElementById('hintBtn').disabled = true;
-        }
-    }
-}
-
-function verifyGuess() {
-    const guess = document.getElementById('userGuess').value.trim().toLowerCase();
-    const correct = currentTriviaItem.respuesta.toLowerCase();
-
-    if (guess === correct) {
-        alert("¡EXCELENTE! HAS ADIVINADO.");
-        updateSelection(); // Regresa al estado normal de la pantalla
-    } else {
-        alert("INCORRECTO. ¡USA OTRA PISTA!");
-    }
-}
-function renderTriviaScreen() {
-    const panel = document.getElementById('infoPanel');
-    panel.innerHTML = `
-        <div style="color:var(--color-oro); font-size:0.4rem; margin-bottom:8px;">¿QUIÉN ES?</div>
-        <div id="hintBox" style="background:#111; padding:8px; border:1px solid #333; min-height:40px; margin-bottom:10px;">
-            <div style="color:#0f0; font-size:0.35rem;">Pista 1: ${currentTriviaItem.pistas[0]}</div>
-        </div>
-        
-        <input type="text" id="userGuess" placeholder="Escribe aquí..." 
-               style="width:90%; font-family:'Press Start 2P'; font-size:0.35rem; margin-bottom:8px; padding:4px;">
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-            <button onclick="verifyGuess()" style="background:var(--color-verde); font-family:'Press Start 2P'; font-size:0.3rem; padding:8px;">LISTO</button>
-            <button onclick="revealNextHint()" id="hintBtn" style="background:var(--color-amarillo); font-family:'Press Start 2P'; font-size:0.3rem; padding:8px;">MÁS PISTAS</button>
-        </div>
-        <button onclick="updateSelection()" style="background:var(--color-rojo); width:100%; margin-top:5px; font-family:'Press Start 2P'; font-size:0.3rem; padding:4px;">SALIR</button>
-    `;
-}
-
-let content = {}; 
-let modes = [];
-let currentModeIdx = 0;
-let currentIndex = 0;
-let currentLang = 'es-MX';
-const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX', 'it-IT', 'pt-BR'];
-const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT'];
-let langIdx = 0;
-
-
-window.initExperience = function() {
-    const welcome = document.getElementById('welcome-screen');
-    if (welcome) welcome.style.display = 'none';
-    if (modes.length > 0) buildCarousel();
-};
-
-
-async function loadDataFromSheets() {
-    const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
-    
-    try {
-        const response = await fetch(url);
-        const data = await response.text();
-        const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
-
-        
-        if (rows[1]) {
-            const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    async function init() {
+        try {
+            const res = await fetch(URL_DINAMICAS + '&cache=' + Date.now()); 
+            const csv = await res.text();
+            const rows = csv.split(/\r?\n/).filter(r => r.trim() !== "").slice(1);
             const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
-
-            const tituloA2 = clean(config[0]);
-            const fontB2 = clean(config[1]) || "'Press Start 2P'";
-            const colorC2 = clean(config[2]);
-            const colorD2 = clean(config[3]);
-            const assetF2 = clean(config[5]);
-
-            const titleEl = document.querySelector('.retro-title');
-            if(titleEl) {
-                titleEl.innerHTML = tituloA2.replace(/\\n/g, '<br>');
-                titleEl.style.color = colorC2;
-                titleEl.style.fontFamily = fontB2;
-            }
-
-            document.body.style.backgroundColor = colorD2;
-            const welcome = document.getElementById('welcome-screen');
-            if(welcome) welcome.style.backgroundColor = colorD2;
-
-            window.activeTheme = { 
-                caseteVisual: assetF2, 
-                caseteTxt: clean(config[4]),
-                btnDin: clean(config[6]),
-                bgDin: clean(config[7]) 
-            };
-        }
-
-        
-        content = {}; 
-        triviaPool = []; 
-        let lastCat = "";
-        let currentTriviaEntry = null;
-
-        rows.slice(2).forEach((row) => {
-            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            if (cols.length < 2) return; // Saltamos filas vacías o malformadas
-
-            const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
+            const cfg = rows[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             
-           
-            let cat = cleanV(cols[0]); 
-            let title = cleanV(cols[1]); 
+            document.body.style.backgroundColor = clean(cfg[6]);
+            const titulo = document.getElementById('titulo-principal');
+            if(titulo) titulo.style.color = clean(cfg[7]);
+            
+            const colorTxtBtn = clean(cfg[8]);
+            const colorBgBtn = clean(cfg[9]);
+            const btns = document.querySelectorAll('.btn-game, .control-btn, .back-btn, .back-link');
+            btns.forEach(b => {
+                b.style.color = colorTxtBtn;
+                b.style.backgroundColor = colorBgBtn;
+            });
 
-            if (title && title.toLowerCase() !== "título") {
-                if (cat === "" && lastCat !== "") cat = lastCat;
-                else if (cat !== "") lastCat = cat;
+            if(document.getElementById('btn-regresar')) document.getElementById('btn-regresar').innerText = clean(cfg[10]) || "VOLVER";
+            colorInstrucciones = clean(cfg[11]);
 
-                if (!content[cat]) content[cat] = [];
-                content[cat].push({
-                    t: title,
-                    es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
-                    fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
-                    it: cleanV(cols[8]), pt: cleanV(cols[9])
-                });
-            }
+            poolTrivia = []; poolMemory = []; poolPuzzle = [];
+            
+            // CAMBIO 3: Lectura de Columna K (Japonés es índice 10)
+            rows.forEach((row) => {
+                const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                
+                // Categoría (Col A para los modos)
+                let cat = clean(cols[0]);
+                if(cat && !categories.includes(cat)) categories.push(cat);
 
-            // --- CARGA DE TRIVIA (L=11, O=14) ---
-            // Usamos una lógica más flexible que el % 5 para evitar que el script se trabe
-            const pistaLocal = cleanV(cols[11]);
-            const respuestaLocal = cleanV(cols[14]);
-
-            if (respuestaLocal !== "") {
-                // Si la respuesta es distinta a la anterior, creamos un nuevo bloque
-                if (!currentTriviaEntry || currentTriviaEntry.respuesta !== respuestaLocal) {
-                    currentTriviaEntry = { respuesta: respuestaLocal, pistas: [] };
-                    triviaPool.push(currentTriviaEntry);
+                const pistaA = clean(cols[0]), respuestaB = clean(cols[1]);
+                if(respuestaB) {
+                    let trivia = poolTrivia.find(x => x.res === respuestaB);
+                    if(!trivia) { trivia = { res: respuestaB, pistas: [] }; poolTrivia.push(trivia); }
+                    if(pistaA) trivia.pistas.push(pistaA);
                 }
-                // Añadimos pista si hay espacio (máximo 5)
-                if (pistaLocal !== "" && currentTriviaEntry.pistas.length < 5) {
-                    currentTriviaEntry.pistas.push(pistaLocal);
-                }
-            }
+                const textoC = clean(cols[2]); 
+                const imagenD = convertDriveLink(clean(cols[3])); 
+                if(textoC && imagenD) poolMemory.push({ txt: textoC, img: imagenD, jp: clean(cols[10]) }); // Guardamos JP
+                
+                const imagenE = convertDriveLink(clean(cols[4]));
+                if(imagenE) poolPuzzle.push(imagenE);
+            });
+            
+            updateModeLabel();
+            applyInstructionColor();
+        } catch(e) { console.error("Error crítico de carga:", e); }
+    }
+
+    // CAMBIO 1: Función para actualizar el texto del modo
+    function updateModeLabel() {
+        const label = document.getElementById('mode-label');
+        if(label && categories.length > 0) {
+            label.innerText = `MODO: ${categories[currentCatIdx].toUpperCase()}`;
+        }
+    }
+
+    // Simulación de giro de perilla de modo (puedes llamar a esto para probar)
+    function nextCategory() {
+        currentCatIdx = (currentCatIdx + 1) % categories.length;
+        updateModeLabel();
+    }
+
+    function convertDriveLink(url) {
+        if (!url || !url.includes('drive.google.com')) return url;
+        let id = "";
+        if (url.includes('id=')) id = url.split('id=')[1].split('&')[0];
+        else if (url.includes('/file/d/')) id = url.split('/file/d/')[1].split('/')[0].split('?')[0];
+        return id ? `https://lh3.googleusercontent.com/d/${id}` : url;
+    }
+
+    function applyInstructionColor() {
+        const textos = document.querySelectorAll('#hintBox, .hint-text, .card span');
+        textos.forEach(t => { t.style.color = colorInstrucciones; });
+    }
+
+    function showHome() {
+        document.getElementById('victory-screen').style.display = 'none';
+        document.querySelectorAll('.game-section').forEach(s => s.style.display = 'none');
+        document.getElementById('main-menu').style.display = 'block';
+        if(document.getElementById('btn-regresar')) document.getElementById('btn-regresar').style.display = 'block';
+    }
+
+    function ocultarBotonVolver() {
+        if(document.getElementById('btn-regresar')) document.getElementById('btn-regresar').style.display = 'none';
+    }
+
+    function mostrarVictoria(mensaje) {
+        document.getElementById('victory-msg').innerHTML = mensaje;
+        document.getElementById('victory-screen').style.display = 'flex';
+    }
+
+    // --- JUEGOS (Lógica intacta) ---
+    function runTrivia() {
+        ocultarBotonVolver();
+        if(poolTrivia.length === 0) return;
+        curObj = poolTrivia[Math.floor(Math.random() * poolTrivia.length)];
+        curHintIdx = 0;
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('view-trivia').style.display = 'block';
+        document.getElementById('hintBox').innerHTML = `PISTA 1:<br>${curObj.pistas[0]}`;
+        document.getElementById('ansInput').value = "";
+    }
+
+    function nextHint() {
+        if(curHintIdx < curObj.pistas.length - 1) {
+            curHintIdx++;
+            document.getElementById('hintBox').innerHTML += `<br><br>PISTA ${curHintIdx+1}:<br>${curObj.pistas[curHintIdx]}`;
+            applyInstructionColor();
+        }
+    }
+
+    function checkAns() {
+        if(document.getElementById('ansInput').value.trim().toLowerCase() === curObj.res.toLowerCase()) {
+            mostrarVictoria("¡EXCELENTE!<br>Has adivinado correctamente.");
+        } else alert("INTENTA DE NUEVO");
+    }
+
+    let flippedCards = [], matchesFound = 0;
+    function runMemory() {
+        ocultarBotonVolver();
+        const grid = document.getElementById('memory-grid'); grid.innerHTML = ''; 
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('view-memory').style.display = 'block';
+        flippedCards = []; matchesFound = 0;
+        if (poolMemory.length < 3) return alert("Faltan datos.");
+        let selection = [...poolMemory].sort(() => 0.5 - Math.random()).slice(0, 3);
+        let gameSet = [];
+        selection.forEach(item => {
+            gameSet.push({ id: item.txt, type: 'img', content: item.img });
+            // CAMBIO 3: Si el idioma es JP, podríamos usar item.jp si fuera necesario
+            gameSet.push({ id: item.txt, type: 'txt', content: item.txt });
         });
+        gameSet.sort(() => 0.5 - Math.random());
+        gameSet.forEach(data => {
+            const card = document.createElement('div');
+            card.className = 'card'; card.dataset.pairId = data.id;
+            card.innerHTML = data.type === 'img' ? `<img src="${data.content}">` : `<span>${data.content}</span>`;
+            card.onclick = function() {
+                if (flippedCards.length < 2 && !this.classList.contains('flipped')) {
+                    this.classList.add('flipped'); flippedCards.push(this);
+                    if (flippedCards.length === 2) setTimeout(checkMem, 1000);
+                }
+            };
+            grid.appendChild(card);
+        });
+        applyInstructionColor();
+    }
 
-        modes = Object.keys(content);
-        if (modes.length > 0 && document.getElementById('welcome-screen').style.display === 'none') {
-            buildCarousel();
+    function checkMem() {
+        const [card1, card2] = flippedCards;
+        if (card1.dataset.pairId === card2.dataset.pairId) {
+            card1.style.visibility = 'hidden'; card2.style.visibility = 'hidden';
+            matchesFound++;
+            if (matchesFound === 3) mostrarVictoria("¡FANTÁSTICO!<br>Has encontrado todos los pares.");
+        } else { card1.classList.remove('flipped'); card2.classList.remove('flipped'); }
+        flippedCards = [];
+    }
+
+    let puzzlePieces = [], emptyPieceIdx = 8;
+    function runPuzzle() {
+        ocultarBotonVolver();
+        if(poolPuzzle.length === 0) return alert("Sin imágenes.");
+        const grid = document.getElementById('puzzle-grid'); grid.innerHTML = '';
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('view-puzzle').style.display = 'block';
+        const img = poolPuzzle[Math.floor(Math.random() * poolPuzzle.length)];
+        puzzlePieces = [...Array(8).keys(), 'empty'].sort(() => 0.5 - Math.random());
+        emptyPieceIdx = puzzlePieces.indexOf('empty');
+        drawPuzzle(img);
+    }
+
+    function drawPuzzle(url) {
+        const grid = document.getElementById('puzzle-grid'); grid.innerHTML = '';
+        puzzlePieces.forEach((p, i) => {
+            const div = document.createElement('div');
+            div.className = 'tile' + (p === 'empty' ? ' empty' : '');
+            if(p !== 'empty') {
+                div.style.backgroundImage = `url('${url}')`;
+                div.style.backgroundPosition = `-${(p % 3) * 110}px -${Math.floor(p / 3) * 110}px`;
+                div.onclick = () => {
+                    const adyacentes = [i-1, i+1, i-3, i+3];
+                    if(i % 3 === 0) adyacentes[0] = -1;
+                    if(i % 3 === 2) adyacentes[1] = -1;
+                    if(adyacentes.includes(emptyPieceIdx)) {
+                        [puzzlePieces[i], puzzlePieces[emptyPieceIdx]] = [puzzlePieces[emptyPieceIdx], puzzlePieces[i]];
+                        emptyPieceIdx = i; drawPuzzle(url);
+                        checkPuzzleWin();
+                    }
+                };
+            }
+            grid.appendChild(div);
+        });
+    }
+
+    function checkPuzzleWin() {
+        if (puzzlePieces.every((p, i) => p === 'empty' ? i === 8 : p === i)) {
+            mostrarVictoria("¡MURAL RESTAURADO!<br>Excelente trabajo.");
         }
-        
-        console.log("Carga completa. Murales:", modes.length, "Trivias:", triviaPool.length);
-
-    } catch (e) { 
-        console.error("Error en el script:", e); 
-    }
-}
-
-
-function buildCarousel() {
-    const container = document.getElementById('carouselContainer');
-    if(!container) return;
-    container.innerHTML = '';
-    
-    const items = content[modes[currentModeIdx]];
-    const total = items.length;
-    const theta = 360 / total;
-    const radius = Math.max(220, Math.round((75 / Math.tan(Math.PI / total))) + 100);
-
-    items.forEach((item, i) => {
-        const card = document.createElement('div');
-        card.className = 'cassette-card';
-        
-        // Jala la imagen desde F2 (Celda 6 de la fila 2)
-        const visual = window.activeTheme.caseteVisual;
-        if (visual.includes('http') || visual.includes('.')) {
-            card.style.backgroundImage = `url(${visual})`;
-            card.style.backgroundSize = '100% 100%';
-        } else {
-            card.style.backgroundColor = visual || '#D6742B';
-        }
-        
-        // NOTA: Ya no agregamos innerHTML con el nombre para que el casete esté limpio
-        card.style.transform = `rotateY(${i * theta}deg) translateZ(${radius}px)`;
-        card.onclick = () => { currentIndex = i; updateSelection(); playCurrent(); };
-        container.appendChild(card);
-    });
-    
-    // Actualizamos el modo en grande
-    document.getElementById('mode-label').innerText = `MODO: ${modes[currentModeIdx].toUpperCase()}`;
-    updateSelection();
-}
-// 5. NAVEGACIÓN
-function nextMode() {
-    window.speechSynthesis.cancel();
-    currentModeIdx = (currentModeIdx + 1) % modes.length;
-    currentIndex = 0;
-    document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
-    buildCarousel();
-}
-
-function rotateCarousel(dir) {
-    window.speechSynthesis.cancel();
-    const items = content[modes[currentModeIdx]];
-    currentIndex = (currentIndex + dir + items.length) % items.length;
-    updateSelection();
-}
-
-function updateSelection() {
-    const cards = document.querySelectorAll('.cassette-card');
-    if (cards.length === 0) return;
-    const theta = 360 / cards.length;
-    document.getElementById('carouselContainer').style.transform = `rotateY(${-currentIndex * theta}deg)`;
-    cards.forEach((card, i) => card.classList.toggle('active', i === currentIndex));
-    document.getElementById('currentTitle').innerText = content[modes[currentModeIdx]][currentIndex].t;
-}
-
-// 6. AUDIO (Columnas C a H) - Actualizado para ser silencioso
-// 6. AUDIO (Columnas C a H) - Actualizado para anunciar el idioma
-function toggleLanguage() {
-    // 1. Detenemos cualquier audio previo
-    stopAudioForce(); 
-    
-    // 2. Cambiamos el idioma en la lista (Ahora incluye IT y PT)
-    // Asegúrate de que tu variable langOptions tenga 8 elementos al inicio del script
-    langIdx = (langIdx + 1) % langOptions.length;
-    currentLang = langOptions[langIdx];
-    
-    // 3. Giramos la perilla visualmente (360 grados / 8 idiomas = 45 grados por clic)
-    const knob = document.getElementById('lang-knob');
-    if (knob) {
-        knob.style.transform = `rotate(${langIdx * 45}deg)`;
-    }
-    
-    // 4. Actualizamos el texto del indicador visual
-    const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT'];
-    const langLabel = document.getElementById('lang-label');
-    if (langLabel) {
-        langLabel.innerText = langNames[langIdx];
     }
 
-    // 5. La voz anuncia el idioma seleccionado (Incluyendo los nuevos)
-    const voiceAnnouncements = {
-        'es-MX': 'Español',
-        'en-US': 'English',
-        'zh-CN': 'Mandarín',
-        'fr-FR': 'Français',
-        'de-DE': 'Deutsch',
-        'nah-MX': 'Náhuatl',
-        'it-IT': 'Italiano',
-        'pt-BR': 'Português'
-    };
-
-    const announcement = new SpeechSynthesisUtterance(voiceAnnouncements[currentLang]);
-    
-    // Configuramos la voz correcta para el anuncio
-    if (currentLang === 'nah-MX') {
-        announcement.lang = 'es-MX'; // Náhuatl leído con voz en español
-    } else {
-        announcement.lang = currentLang;
+    function salirAExposicion() {
+        document.body.style.opacity = "0";
+        document.body.style.transition = "opacity 0.3s";
+        setTimeout(() => { window.location.replace("https://programaeducativoacsi.github.io/ACSI-expo/"); }, 300);
     }
-    
-    announcement.pitch = 1.2; // Tono más agudo para el "asistente"
-    announcement.rate = 1;
 
-    window.speechSynthesis.speak(announcement);
-    
-    // 6. Actualizamos el texto del panel negro sin reproducir el contenido largo
-    updateSelection();
-}
-function playCurrent() {
-    stopAudioForce(); // Detenemos cualquier anuncio previo
-    
-    const item = content[modes[currentModeIdx]][currentIndex];
-    
-    // 1. ACTUALIZACIÓN DEL MAPA DE COLUMNAS
-    // Asegúrate de que coincida con el orden de tus columnas en Sheets
-    const langMap = { 
-        'es-MX': 'es', 
-        'en-US': 'en', 
-        'zh-CN': 'zh', 
-        'fr-FR': 'fr', 
-        'de-DE': 'de', 
-        'nah-MX': 'nah',
-        'it-IT': 'it', // Esto buscará en la columna de Italiano
-        'pt-BR': 'pt'  // Esto buscará en la columna de Portugués
-    };
-    
-    // Obtenemos el texto. Si no existe en el idioma, usa español por defecto
-    const text = item[langMap[currentLang]] || item.es;
-    
-    const msg = new SpeechSynthesisUtterance(text);
-    
-    // 2. ASIGNACIÓN DEL ACENTO CORRECTO
-    // Si es Náhuatl, usamos voz de México. Si no, usamos la del idioma seleccionado.
-    if (currentLang === 'nah-MX') {
-        msg.lang = 'es-MX';
-        msg.rate = 0.8;
-    } else {
-        msg.lang = currentLang; // Aquí es donde se activa el acento IT o PT
-    }
-    
-    window.speechSynthesis.speak(msg);
-}
-function stopAudioForce() {
-    if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-    }
-}
-
-document.addEventListener('DOMContentLoaded', loadDataFromSheets);
+    window.onload = init;
 </script>
 </body>
 </html>
