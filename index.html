@@ -6,98 +6,97 @@
     <title>Exposición San Ildefonso</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap" rel="stylesheet">
 <style>
-        :root {
-            --color-verde: #80B0A4; --color-rojo: #D04F2C;
-            --color-amarillo: #D9AC36; --color-naranja: #D6742B;
-            --color-cafe: #431E15; --color-crema: #fffaf0;
-            --color-azul: #4A90E2; --color-oro: #FFD700;
-            --color-madera: #8d6e63;
-        }
+    :root {
+        --color-verde: #80B0A4; --color-rojo: #D04F2C;
+        --color-amarillo: #D9AC36; --color-naranja: #D6742B;
+        --color-cafe: #431E15; --color-crema: #fffaf0;
+        --color-azul: #4A90E2; --color-oro: #FFD700;
+        --color-madera: #8d6e63;
+    }
 
-        body {
-            background-color: var(--color-crema);
-            font-family: 'Press Start 2P', cursive;
-            margin: 0; overflow: hidden; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; width: 100vw;
-        }
+    body {
+        background-color: var(--color-crema);
+        font-family: 'Press Start 2P', cursive;
+        margin: 0; overflow: hidden; 
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        height: 100vh; width: 100vw;
+    }
 
-        #welcome-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--color-crema);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9000; text-align: center; padding: 20px;
-        }
+    #welcome-screen {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: var(--color-crema);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 9000; text-align: center; padding: 20px;
+    }
 
-        .retro-title {
-            font-size: 1.2rem; color: var(--color-rojo);
-            text-shadow: 4px 4px 0px var(--color-cafe), 8px 8px 0px var(--color-naranja);
-            margin-bottom: 20px; line-height: 1.4;
-        }
+    .retro-title {
+        font-size: 1.2rem; color: var(--color-rojo);
+        text-shadow: 4px 4px 0px var(--color-cafe), 8px 8px 0px var(--color-naranja);
+        margin-bottom: 20px; line-height: 1.4;
+    }
 
-        .tv-furniture {
-            position: relative;
-            width: 95vw; max-width: 460px;
-            background-color: var(--color-madera);
-            border: 10px solid #5d4037; border-radius: 40px;
-            padding: 30px 10px 15px 10px; 
-            box-shadow: 0 20px 0 #3d2b1f, 0 30px 50px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column; align-items: center;
-        }
+    .tv-furniture {
+        position: relative;
+        width: 95vw; max-width: 460px;
+        background-color: var(--color-madera);
+        border: 10px solid #5d4037; border-radius: 40px;
+        padding: 30px 10px 15px 10px; 
+        box-shadow: 0 20px 0 #3d2b1f, 0 30px 50px rgba(0,0,0,0.5);
+        display: flex; flex-direction: column; align-items: center;
+    }
 
-        .tv-screen {
-            width: 85%; height: 210px; background: #1a1a1a;
-            border: 8px solid #b8860b; border-radius: 20px;
-            overflow: hidden; perspective: 1000px;
-            display: flex; align-items: center; justify-content: center;
-            position: relative;
-        }
+    .tv-screen {
+        width: 85%; height: 210px; background: #1a1a1a;
+        border: 8px solid #b8860b; border-radius: 20px;
+        overflow: hidden; perspective: 1000px;
+        display: flex; align-items: center; justify-content: center;
+        position: relative;
+    }
 
-        .carousel { width: 180px; height: 120px; position: relative; transform-style: preserve-3d; transition: transform 0.8s; }
-        
-        .cassette-card { 
-            position: absolute; width: 120px; height: 80px; 
-            background: var(--color-naranja); border: 2px solid white;
-            display: flex; align-items: center; justify-content: center;
-            backface-visibility: hidden; cursor: pointer;
-        }
-        
-        .cassette-card.active { border: 4px solid var(--color-oro); box-shadow: 0 0 15px var(--color-oro); }
+    .carousel { width: 180px; height: 120px; position: relative; transform-style: preserve-3d; transition: transform 0.8s; }
+    
+    .cassette-card { 
+        position: absolute; width: 120px; height: 80px; 
+        background: var(--color-naranja); border: 2px solid white;
+        display: flex; align-items: center; justify-content: center;
+        backface-visibility: hidden; cursor: pointer;
+    }
+    
+    .cassette-card.active { border: 4px solid var(--color-oro); box-shadow: 0 0 15px var(--color-oro); }
 
-        .display-text-area { text-align: center; margin: 10px 0; width: 85%; }
-        
-        /* CAMBIO 2: Color Blanco para el MODO */
-        #mode-label-display { font-size: 0.4rem; color: #ffffff; margin-bottom: 5px; }
-        #currentTitle { font-size: 0.45rem; color: var(--color-oro); min-height: 1.2em; }
+    .display-text-area { text-align: center; margin: 10px 0; width: 85%; }
+    
+    #mode-label-display { font-size: 0.4rem; color: #ffffff; margin-bottom: 5px; }
+    #currentTitle { font-size: 0.45rem; color: var(--color-oro); min-height: 1.2em; }
 
-        .controls-panel { 
-            width: 90%; 
-            display: grid; 
-            grid-template-columns: 1fr 1.5fr 1fr; 
-            align-items: center; 
-            gap: 5px; 
-            color: white; 
-            margin-top: 10px; 
-            padding: 10px;
-            background: rgba(0,0,0,0.2); 
-            border-radius: 20px;
-        }
+    .controls-panel { 
+        width: 90%; 
+        display: grid; 
+        grid-template-columns: 1fr 1.5fr 1fr; 
+        align-items: center; 
+        gap: 5px; 
+        color: white; 
+        margin-top: 10px; 
+        padding: 10px;
+        background: rgba(0,0,0,0.2); 
+        border-radius: 20px;
+    }
 
-        .knob-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .knob { width: 40px; height: 40px; background: #222; border: 3px solid var(--color-oro); border-radius: 50%; cursor: pointer; transition: transform 0.5s; position: relative; }
-        .knob::after { content: ''; position: absolute; top: 4px; left: 50%; width: 3px; height: 10px; background: var(--color-oro); transform: translateX(-50%); }
-        
-        .control-label { font-size: 0.25rem; color: var(--color-oro); text-transform: uppercase; margin-bottom: 2px; }
-        .dynamic-label { font-size: 0.35rem; color: white; }
+    .knob-container { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .knob { width: 40px; height: 40px; background: #222; border: 3px solid var(--color-oro); border-radius: 50%; cursor: pointer; transition: transform 0.5s; position: relative; }
+    .knob::after { content: ''; position: absolute; top: 4px; left: 50%; width: 3px; height: 10px; background: var(--color-oro); transform: translateX(-50%); }
+    
+    .control-label { font-size: 0.25rem; color: var(--color-oro); text-transform: uppercase; margin-bottom: 2px; }
+    .dynamic-label { font-size: 0.35rem; color: white; }
 
-        .nav-buttons-container { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; margin-bottom: 8px; }
-        .btn-yellow { background: var(--color-amarillo); color: var(--color-cafe); border: none; padding: 8px 4px; font-family: 'Press Start 2P'; font-size: 0.35rem; cursor: pointer; box-shadow: 2px 2px 0px #000; }
-        
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; }
-        .btn-nav { background: var(--color-amarillo); border: none; padding: 8px 4px; font-family: 'Press Start 2P'; font-size: 0.35rem; cursor: pointer; box-shadow: 2px 2px 0px #000; }
-        
-        .btn-top-left { position: absolute; top: 20px; left: 20px; z-index: 1000; background: var(--color-rojo); color: white; border: 4px solid var(--color-cafe); padding: 15px; font-size: 0.6rem; cursor: pointer; }
-    </style>
+    .nav-buttons-container { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; margin-bottom: 8px; }
+    .btn-yellow { background: var(--color-amarillo); color: var(--color-cafe); border: none; padding: 8px 4px; font-family: 'Press Start 2P'; font-size: 0.35rem; cursor: pointer; box-shadow: 2px 2px 0px #000; }
+    
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 100%; }
+    .btn-nav { background: var(--color-amarillo); border: none; padding: 8px 4px; font-family: 'Press Start 2P'; font-size: 0.35rem; cursor: pointer; box-shadow: 2px 2px 0px #000; }
+    
+    .btn-top-left { position: absolute; top: 20px; left: 20px; z-index: 1000; background: var(--color-rojo); color: white; border: 4px solid var(--color-cafe); padding: 15px; font-size: 0.6rem; cursor: pointer; }
+</style>
 </head>
 <body>
 
@@ -106,12 +105,7 @@
     <button class="btn-nav" style="background:var(--color-verde); padding:20px; font-size: 0.6rem;" onclick="initExperience()">COMENZAR</button>
 </div>
 
-<a href="https://programaeducativoacsi.github.io/actividades-ACSIP/" 
-   class="btn-top-left" 
-   style="text-decoration: none; display: inline-block; text-align: center;"
-   onclick="event.preventDefault(); window.location.replace(this.href);">
-   DINÁMICAS
-</a>
+<a href="https://programaeducativoacsi.github.io/actividades-ACSIP/" class="btn-top-left" style="text-decoration: none;">DINÁMICAS</a>
 
 <div class="tv-furniture">
     <div class="tv-screen">
@@ -155,15 +149,13 @@ let modes = [];
 let currentModeIdx = 0;
 let currentIndex = 0;
 
-// CAMBIO 3: Idiomas incluyendo Japonés (9 opciones)
 const langOptions = ['es-MX', 'en-US', 'zh-CN', 'fr-FR', 'de-DE', 'nah-MX', 'it-IT', 'pt-BR', 'ja-JP'];
 const langNames = ['ES', 'EN', 'ZH', 'FR', 'DE', 'NAH', 'IT', 'PT', 'JP'];
 let langIdx = 0;
 let currentLang = 'es-MX';
 
 window.initExperience = function() {
-    const welcome = document.getElementById('welcome-screen');
-    if (welcome) welcome.style.display = 'none';
+    document.getElementById('welcome-screen').style.display = 'none';
     if (modes.length > 0) buildCarousel();
 };
 
@@ -171,51 +163,52 @@ async function loadDataFromSheets() {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSD2Opou5Ul65XnSAKRq_ozBuqgl6SkxEuPKl1vSGPl_Y5oWJty_m1fbY0f85APgssD2RgnID9Mq9ba/pub?output=csv';
     
     try {
-        const response = await fetch(url + '?cache=' + Date.now());
+        const response = await fetch(url + '&cache=' + Date.now());
         const data = await response.text();
         const rows = data.split(/\r?\n/).filter(row => row.trim() !== "");
+        const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
 
+        // Configuración (Fila 2)
         if (rows[1]) {
             const config = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            const clean = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
-            window.activeTheme = { 
-                caseteVisual: clean(config[5])
-            };
+            window.activeTheme = { caseteVisual: clean(config[5]) };
         }
 
         content = {}; 
-        let lastCat = "";
+        let lastCategory = "";
 
+        // Procesar datos (Fila 3 en adelante)
         rows.slice(2).forEach((row) => {
             const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length < 2) return;
-            const cleanV = (v) => v ? v.replace(/^"|"$/g, "").trim() : "";
-            
-            let cat = cleanV(cols[0]); 
-            let title = cleanV(cols[1]); 
+
+            let cat = clean(cols[0]);
+            let title = clean(cols[1]);
+
+            // Lógica de herencia de categoría (si la celda A está vacía, usa la anterior)
+            if (cat !== "") {
+                lastCategory = cat;
+            } else {
+                cat = lastCategory;
+            }
 
             if (title && title.toLowerCase() !== "título") {
-                if (cat === "" && lastCat !== "") cat = lastCat;
-                else if (cat !== "") lastCat = cat;
-
                 if (!content[cat]) content[cat] = [];
                 content[cat].push({
                     t: title,
-                    es: cleanV(cols[2]), en: cleanV(cols[3]), zh: cleanV(cols[4]),
-                    fr: cleanV(cols[5]), de: cleanV(cols[6]), nah: cleanV(cols[7]),
-                    it: cleanV(cols[8]), pt: cleanV(cols[9]),
-                    jp: cleanV(cols[10]) // CAMBIO 3: Columna K (índice 10)
+                    es: clean(cols[2]), en: clean(cols[3]), zh: clean(cols[4]),
+                    fr: clean(cols[5]), de: clean(cols[6]), nah: clean(cols[7]),
+                    it: clean(cols[8]), pt: clean(cols[9]), jp: clean(cols[10])
                 });
             }
         });
 
         modes = Object.keys(content);
         if (modes.length > 0) {
-            updateModeDisplay(); // CAMBIO 1
+            updateModeDisplay();
             if (document.getElementById('welcome-screen').style.display === 'none') buildCarousel();
         }
-
-    } catch (e) { console.error("Error cargando datos:", e); }
+    } catch (e) { console.error("Error cargando Sheets:", e); }
 }
 
 function buildCarousel() {
@@ -245,7 +238,6 @@ function buildCarousel() {
     updateSelection();
 }
 
-// CAMBIO 1: Actualizar el texto del modo basado en las categorías reales del Excel
 function updateModeDisplay() {
     const modeName = modes[currentModeIdx].toUpperCase();
     document.getElementById('mode-label-display').innerText = `MODO: ${modeName}`;
@@ -256,9 +248,8 @@ function nextMode() {
     stopAudioForce();
     currentModeIdx = (currentModeIdx + 1) % modes.length;
     currentIndex = 0;
-    // Perilla de modo: 4 posiciones básicas o según cantidad de categorías
     document.getElementById('mode-knob').style.transform = `rotate(${currentModeIdx * 90}deg)`;
-    updateModeDisplay(); // CAMBIO 1
+    updateModeDisplay();
     buildCarousel();
 }
 
@@ -282,47 +273,34 @@ function toggleLanguage() {
     stopAudioForce(); 
     langIdx = (langIdx + 1) % langOptions.length;
     currentLang = langOptions[langIdx];
-    
-    // Perilla de idiomas: 9 idiomas = 40 grados por paso
     const knob = document.getElementById('lang-knob');
     if (knob) knob.style.transform = `rotate(${langIdx * 40}deg)`;
-    
     const langLabel = document.getElementById('lang-label');
     if (langLabel) langLabel.innerText = langNames[langIdx];
 
-    const voiceAnnouncements = {
+    const voiceNames = {
         'es-MX': 'Español', 'en-US': 'English', 'zh-CN': 'Mandarín',
         'fr-FR': 'Français', 'de-DE': 'Deutsch', 'nah-MX': 'Náhuatl',
         'it-IT': 'Italiano', 'pt-BR': 'Português', 'ja-JP': 'Japonés'
     };
 
-    const announcement = new SpeechSynthesisUtterance(voiceAnnouncements[currentLang]);
-    announcement.lang = (currentLang === 'nah-MX') ? 'es-MX' : (currentLang === 'ja-JP' ? 'ja-JP' : currentLang);
-    window.speechSynthesis.speak(announcement);
-    
+    const utterance = new SpeechSynthesisUtterance(voiceNames[currentLang]);
+    utterance.lang = (currentLang === 'nah-MX') ? 'es-MX' : (currentLang === 'ja-JP' ? 'ja-JP' : currentLang);
+    window.speechSynthesis.speak(utterance);
     updateSelection();
 }
 
 function playCurrent() {
     stopAudioForce(); 
     const item = content[modes[currentModeIdx]][currentIndex];
-    
-    // CAMBIO 3: Mapeo incluyendo Japonés
     const langMap = { 
         'es-MX': 'es', 'en-US': 'en', 'zh-CN': 'zh', 'fr-FR': 'fr', 
         'de-DE': 'de', 'nah-MX': 'nah', 'it-IT': 'it', 'pt-BR': 'pt', 'ja-JP': 'jp'
     };
-    
     const text = item[langMap[currentLang]] || item.es;
     const msg = new SpeechSynthesisUtterance(text);
-    
-    if (currentLang === 'nah-MX') {
-        msg.lang = 'es-MX';
-        msg.rate = 0.8;
-    } else {
-        msg.lang = (currentLang === 'ja-JP') ? 'ja-JP' : currentLang;
-    }
-    
+    msg.lang = (currentLang === 'nah-MX') ? 'es-MX' : ((currentLang === 'ja-JP') ? 'ja-JP' : currentLang);
+    if (currentLang === 'nah-MX') msg.rate = 0.8;
     window.speechSynthesis.speak(msg);
 }
 
